@@ -1,29 +1,35 @@
 import 'package:flutter/material.dart';
+import '../models/player.dart';
 
+/// PlayerDetailPage: 클릭된 선수의 상세 이미지 페이지
 class PlayerDetailPage extends StatelessWidget {
-  final String playerName;
+  final Player player; // 전달받은 Player 객체
 
-  const PlayerDetailPage({super.key, required this.playerName});
+  const PlayerDetailPage({super.key, required this.player});
 
   @override
   Widget build(BuildContext context) {
-    // 임시 이미지 URL
-    final imageUrl = 'https://picsum.photos/seed/$playerName/400/600';
-
     return Scaffold(
       appBar: AppBar(
-        title: Text('$playerName 상세정보'),
+        title: Text('${player.name} 상세'),
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // 선수 이름
             Text(
-              playerName,
+              player.name,
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            Image.network(imageUrl),
+            // 네트워크 이미지
+            Image.network(
+              player.imageUrl,
+              width: 400,
+              height: 500,
+              fit: BoxFit.cover,
+            ),
           ],
         ),
       ),
