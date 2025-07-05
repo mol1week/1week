@@ -1,16 +1,32 @@
-/// 선수 정보를 담는 모델 클래스
 class Player {
-  final String name;      // 선수 이름
-  final String team;      // 소속 팀
-  final String imageUrl;  // 상세 페이지용 이미지 URL
-
-  // 즐겨찾기 여부(기본값 false)
-  bool isFavorite;
+  final String name;
+  final String position;
+  final String number;
+  final String birthDate;
+  final String positionDetail;
+  final String team;
+  final Map<String, PlayerStats> stats;
 
   Player({
     required this.name,
+    required this.position,
+    required this.number,
+    required this.birthDate,
+    required this.positionDetail,
     required this.team,
-    required this.imageUrl,
-    this.isFavorite = false,  // 초기에는 즐겨찾기 아니라고 설정
+    required this.stats,
   });
 }
+
+class PlayerStats {
+  final String avg;
+  final String hits;
+  final String hr;
+
+  PlayerStats({
+    required this.avg,
+    required this.hits,
+    required this.hr,
+  });
+}
+
