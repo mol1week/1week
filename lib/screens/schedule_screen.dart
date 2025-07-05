@@ -18,11 +18,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   List<Map<String, dynamic>> _games = [];
   bool _isLoading = true;
 
-  // 팀 코드 → 로고 매핑
+  // 팀 코드 → 로고 URL 매핑
+  // 팀 코드 → 로고 URL 매핑
   static const Map<String, String> _teamLogoMap = {
-    '삼성': '🦁', '한화': '🦅', '롯데': '🦭', 'KIA': '🐅',
-    '키움': '🤠', 'SSG': '🐙', 'LG': '👯', 'KT': '🎸',
-    'NC': '🐲', '두산': '🐻',
+    '삼성': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SS.png',
+    '한화': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_HH.png',
+    '롯데': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_LT.png',
+    'KIA': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_HT.png',
+    '키움': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_WO.png',
+    'SSG': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SK.png',
+    'LG': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_LG.png',
+    'KT': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_KT.png',
+    'NC': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_NC.png',
+    '두산': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_OB.png',
   };
 
   @override
@@ -41,10 +49,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         final line = lines[i].trim();
         if (line.isEmpty) continue;
         final parts = _parseCsv(line);
-        // CSV 컬럼: GameDate, Stadium, Status, StartTime, HomeTeam, AwayTeam, HomeScore, AwayScore, HomePitcher, AwayPitcher, ...
         if (parts.length < 10) continue;
 
-        // 날짜 파싱: YYYYMMDD 형식
         DateTime date;
         try {
           final gd = parts[0];
@@ -73,7 +79,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       setState(() {
         _games = games;
         if (games.isNotEmpty) {
-          // 초기 날짜를 파일 첫 경기 날짜로 설정
           _selectedDate = games.first['date'] as DateTime;
         }
         _isLoading = false;
@@ -181,8 +186,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 itemCount: _filteredGames.length,
                 itemBuilder: (ctx, i) {
                   final game = _filteredGames[i];
-                  final homeLogo = _teamLogoMap[game['homeTeam']] ?? '';
-                  final awayLogo = _teamLogoMap[game['awayTeam']] ?? '';
+                  final homeLogoUrl = _teamLogoMap[game['homeTeam']]!;
+                  final awayLogoUrl = _teamLogoMap[game['awayTeam']]!;
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal:16, vertical:8),
                     decoration: BoxDecoration(color:Colors.white, borderRadius:BorderRadius.circular(8), boxShadow:[BoxShadow(color:Colors.grey.withOpacity(0.2), spreadRadius:1, blurRadius:3)]),
@@ -193,9 +198,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           Container(padding:const EdgeInsets.symmetric(horizontal:12, vertical:4), decoration:BoxDecoration(color:Colors.blue, borderRadius:BorderRadius.circular(12)), child: Text(game['status'], style: const TextStyle(color:Colors.white, fontSize:12, fontWeight:FontWeight.bold))),
                           const SizedBox(height:16),
                           Row(mainAxisAlignment:MainAxisAlignment.spaceEvenly, children:[
-                            Column(children:[Text(homeLogo, style: const TextStyle(fontSize:32)), const SizedBox(height:4), Text(game['homeTeam'], style: const TextStyle(fontSize:14, fontWeight:FontWeight.bold))]),
+                            Column(children:[Image.network(homeLogoUrl, width:32, height:32), const SizedBox(height:4), Text(game['homeTeam'], style: const TextStyle(fontSize:14, fontWeight:FontWeight.bold))]),
                             Column(children:[Text(game['time'], style: const TextStyle(fontSize:16, fontWeight:FontWeight.bold)), Text(game['stadium'], style: const TextStyle(fontSize:12, color:Colors.grey))]),
-                            Column(children:[Text(awayLogo, style: const TextStyle(fontSize:32)), const SizedBox(height:4), Text(game['awayTeam'], style: const TextStyle(fontSize:14, fontWeight:FontWeight.bold))]),
+                            Column(children:[Image.network(awayLogoUrl, width:32, height:32), const SizedBox(height:4), Text(game['awayTeam'], style: const TextStyle(fontSize:14, fontWeight:FontWeight.bold))]),
                           ]),
                           const SizedBox(height:16),
                           Row(mainAxisAlignment:MainAxisAlignment.spaceAround, children:[Text(game['homePitcher'], style: const TextStyle(fontSize:12)), const Text('선발투수', style: TextStyle(fontSize:12, color:Colors.grey)), Text(game['awayPitcher'], style: const TextStyle(fontSize:12))]),
@@ -213,3 +218,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     );
   }
 }
+
+
+//day (요일)
