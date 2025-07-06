@@ -5,54 +5,60 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'player_detail_screen.dart';
 
+/// PlayerScreen:
+/// 선수 목록 화면입니다. filterTeam 파라미터로 특정 팀만 보여줄 수 있습니다.
 class PlayerScreen extends StatefulWidget {
-  const PlayerScreen({super.key});
+  /// 선택된 팀명 (null이면 전체)
+  final String? filterTeam;
+
+  const PlayerScreen({Key? key, this.filterTeam}) : super(key: key);
+
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
 class _PlayerScreenState extends State<PlayerScreen> {
-  String _selectedTeam = '전체';
-  List<String> _teams = ['전체'];
-  List<Map<String, dynamic>> _players = [];
-  bool _isLoading = true;
+  /// 현재 드롭다운에 선택된 팀
+  late String _selectedTeam;
 
-  /// 팀 코드 → 화면용 이름 매핑
-  static const Map<String, String> _teamDisplayMap = {
-    'KIA'  : 'KIA 타이거즈',
-    '롯데'  : '롯데 자이언츠',
-    '삼성'  : '삼성 라이온즈',
-    '두산'  : '두산 베어스',
-    'LG'   : 'LG 트윈스',
-    '한화'  : '한화 이글스',
-    'KT'   : 'KT 위즈',
-    'NC'   : 'NC 다이노스',
-    '키움'  : '키움 히어로즈',
-    'SSG'  : 'SSG 랜더스',
-  };
+  /// 드롭다운용 팀 목록 (전체 + CSV에서 추출된 팀)
+  List<String> _teams = ['전체'];
+
+  /// CSV에서 로드한 모든 선수
+  List<Map<String, dynamic>> _players = [];
+
+  /// 로딩 상태
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    // filterTeam 이 넘어오면 그 팀으로 초기 설정, 아니면 '전체'
+    _selectedTeam = widget.filterTeam ?? '전체';
     _loadAllPlayers();
   }
 
+  /// hitter/pitcher CSV를 모두 읽어서 _players 에 저장
   Future<void> _loadAllPlayers() async {
     final hitters  = await _loadCsv('assets/data/kbo_hitter_players.csv', isPitcher: false);
     final pitchers = await _loadCsv('assets/data/kbo_pitcher_players.csv', isPitcher: true);
-
     final all = [...hitters, ...pitchers];
-    // 드롭다운용 팀 리스트 생성
+
+    // 드롭다운용 팀 목록 생성
     final teams = all.map((p) => p['team'] as String).toSet().toList()..sort();
 
     setState(() {
-      _players    = all;
-      _teams      = ['전체', ...teams];
-      _isLoading  = false;
-      _selectedTeam = '전체';
+      _players   = all;
+      _teams     = ['전체', ...teams];
+      _isLoading = false;
+      // 만약 filterTeam이 전달된 값 중 하나라면 드롭다운에도 적용
+      if (widget.filterTeam != null && teams.contains(widget.filterTeam)) {
+        _selectedTeam = widget.filterTeam!;
+      }
     });
   }
 
+  /// CSV 파싱 로직 (n개만 split)
   Future<List<Map<String, dynamic>>> _loadCsv(String path, {required bool isPitcher}) async {
     final raw   = await rootBundle.loadString(path);
     final lines = raw.split('\n');
@@ -62,35 +68,46 @@ class _PlayerScreenState extends State<PlayerScreen> {
       final line = lines[i].trim();
       if (line.isEmpty) continue;
 
-      // 1) 타자: 첫 5개 콤마, 투수: 첫 6개 콤마만 split
       final parts = _parseCSVLine(line, maxSplits: isPitcher ? 6 : 5);
       if (parts.length <= (isPitcher ? 6 : 5)) continue;
 
-      // 공통 필드
+      // --- 공통 필드 추출 ---
       final name           = parts[0];
       final imageUrl       = parts[1];
-      final backNo         = parts[isPitcher ? 3 : 2];
-      final positionDetail = parts[isPitcher ? 4 : 3];
-      final heightWeight   = parts[isPitcher ? 5 : 4];
-      var   recordJson     = parts.last;    // 타자: parts[5], 투수: parts[6]
+      final backNo         = isPitcher ? parts[3] : parts[2];
+      final positionDetail = isPitcher ? parts[4] : parts[3];
+      final heightWeight   = isPitcher ? parts[5] : parts[4];
+      var   recordJson     = parts.last;
 
-      // 2) Record JSON cleanup
+      // JSON 문자열 정리 (외부 따옴표, 작은따옴표 교체)
       if (recordJson.startsWith('"') && recordJson.endsWith('"')) {
         recordJson = recordJson.substring(1, recordJson.length - 1);
       }
       recordJson = recordJson.replaceAll("'", '"');
 
-      // 3) 팀 코드 추출
+      // --- 3) 팀 코드 추출 ---
       String teamCode;
       if (isPitcher) {
-        // 투수 CSV에 Team 컬럼이 3번째 요소(parts[2])로 들어있음
+        // 투수 CSV에 Team 컬럼이 3번째 요소(parts[2])에 들어있음
         teamCode = parts[2];
       } else {
-        // 타자 CSV엔 Team 컬럼이 없으니 Record JSON 첫 레코드에서 추출
+        // 타자 CSV엔 Team 컬럼 없으므로, Record JSON 배열을 역순으로 돌며
+        // Team 필드가 있는 첫 번째 레코드를 최신 팀으로 사용
         teamCode = 'N/A';
+        try {
+          final recs = json.decode(recordJson) as List<dynamic>;
+          for (final rec in recs.reversed) {
+            if (rec is Map<String, dynamic> && rec.containsKey('Team')) {
+              teamCode = rec['Team'].toString();
+              break;
+            }
+          }
+        } catch (_) {
+          // 파싱 오류 시 기본값 N/A 유지
+        }
       }
 
-      // 4) JSON 파싱: stats와, 타자일 때 팀 코드도 여기서 뽑기
+      // --- 4) 스탯 파싱 ---
       final stats = <String, Map<String, String>>{};
       try {
         final recs = json.decode(recordJson) as List<dynamic>;
@@ -99,32 +116,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
             final year = rec.containsKey('Year') ? rec['Year'].toString() : '통산';
             if (isPitcher) {
               stats[year] = {
-                'era' : rec['ERA']?.toString()    ?? '-',
-                'win' : rec['Win']?.toString()    ?? '-',
-                'lose': rec['Lose']?.toString()   ?? '-',
+                'era' : rec['ERA']?.toString() ?? '-',
+                'win' : rec['Win']?.toString() ?? '-',
+                'lose': rec['Lose']?.toString() ?? '-',
               };
             } else {
               stats[year] = {
-                'avg' : rec['Avg']?.toString()     ?? '0.000',
-                'hits': rec['Hit']?.toString()     ?? '0',
+                'avg' : rec['Avg']?.toString() ?? '0.000',
+                'hits': rec['Hit']?.toString() ?? '0',
                 'hr'  : rec['HomeRun']?.toString() ?? '0',
               };
-              // 타자의 Team은 Record JSON의 첫 레코드에서 가져오기
-              if (teamCode == 'N/A' && rec.containsKey('Team')) {
-                teamCode = rec['Team'].toString();
-              }
             }
           }
         }
       } catch (_) {
-        // 파싱 오류 무시
+        // 스탯 파싱 오류 무시
       }
 
-      // 5) 매핑된 화면용 팀 이름
+      // --- 5) 화면용 팀명 매핑 ---
       final teamName = _teamDisplayMap[teamCode] ?? teamCode;
-
-      // 6) 포지션 단순화
-      final position = _simplifyPosition(positionDetail);
 
       out.add({
         'name'           : name,
@@ -132,7 +142,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
         'team'           : teamName,
         'number'         : backNo,
         'positionDetail': positionDetail,
-        'position'       : position,
+        'position'       : _simplifyPosition(positionDetail),
         'heightWeight'   : heightWeight,
         'stats'          : stats,
         'isPitcher'      : isPitcher,
@@ -142,15 +152,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return out;
   }
 
-  String _simplifyPosition(String pd) {
-    if (pd.contains('투수'))   return '투수';
-    if (pd.contains('내야수')) return '내야수';
-    if (pd.contains('외야수')) return '외야수';
-    if (pd.contains('포수'))   return '포수';
-    return 'N/A';
-  }
-
-  /// 처음 maxSplits 개만큼 콤마 분리, 나머지는 그대로 묶어서 남김
+  /// CSV 한 줄을 maxSplits 만큼만 콤마 분리
   List<String> _parseCSVLine(String line, {required int maxSplits}) {
     final res = <String>[];
     final sb  = StringBuffer();
@@ -168,6 +170,29 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return res.map((s) => s.trim()).toList();
   }
 
+  /// 코드→화면용 팀명 매핑
+  static const Map<String, String> _teamDisplayMap = {
+    'KIA' : 'KIA 타이거즈',
+    '롯데' : '롯데 자이언츠',
+    '삼성' : '삼성 라이온즈',
+    '두산' : '두산 베어스',
+    'LG'  : 'LG 트윈스',
+    '한화' : '한화 이글스',
+    'KT'  : 'KT 위즈',
+    'NC'  : 'NC 다이노스',
+    '키움' : '키움 히어로즈',
+    'SSG' : 'SSG 랜더스',
+  };
+
+  String _simplifyPosition(String pd) {
+    if (pd.contains('투수'))   return '투수';
+    if (pd.contains('내야수')) return '내야수';
+    if (pd.contains('외야수')) return '외야수';
+    if (pd.contains('포수'))   return '포수';
+    return 'N/A';
+  }
+
+  /// 드롭다운 선택값에 따라 필터링
   List<Map<String, dynamic>> get _filteredPlayers {
     if (_selectedTeam == '전체') return _players;
     return _players.where((p) => p['team'] == _selectedTeam).toList();
@@ -178,12 +203,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
-        backgroundColor: Colors.white, elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 0,
         title: const Text('선수 보기', style: TextStyle(color: Colors.black)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -201,7 +223,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   child: DropdownButton<String>(
                     isExpanded: true,
                     value: _selectedTeam,
-                    items: _teams.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                    items: _teams
+                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                        .toList(),
                     onChanged: (t) => setState(() => _selectedTeam = t!),
                   ),
                 ),
@@ -212,11 +236,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
           // ── 선수 그리드 ──
           Expanded(
             child: _filteredPlayers.isEmpty
-                ? const Center(child: Text('선수 데이터가 없습니다.', style: TextStyle(color: Colors.grey)))
+                ? const Center(
+                child: Text('선수 데이터가 없습니다.', style: TextStyle(color: Colors.grey)))
                 : GridView.builder(
               padding: const EdgeInsets.all(16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, childAspectRatio: 0.8, crossAxisSpacing: 16, mainAxisSpacing: 16,
+                crossAxisCount: 3,
+                childAspectRatio: 0.8,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
               ),
               itemCount: _filteredPlayers.length,
               itemBuilder: (ctx, i) {
@@ -224,30 +252,33 @@ class _PlayerScreenState extends State<PlayerScreen> {
                 return GestureDetector(
                   onTap: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => PlayerDetailScreen(player: p)),
+                    MaterialPageRoute(
+                        builder: (_) => PlayerDetailScreen(player: p)),
                   ),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 3)],
+                      boxShadow: [
+                        BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 3)
+                      ],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 30, backgroundColor: Colors.grey[300],
-                          backgroundImage: (p['imageUrl'] != null && p['imageUrl'].toString().isNotEmpty)
+                          radius: 30,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: (p['imageUrl'] != null &&
+                              p['imageUrl'].toString().isNotEmpty)
                               ? NetworkImage(p['imageUrl'])
-                              : null,
-                          child: (p['imageUrl'] == null || p['imageUrl'].toString().isEmpty)
-                              ? Text(p['name'][0], style: const TextStyle(color: Colors.white, fontSize: 20))
                               : null,
                         ),
                         const SizedBox(height: 8),
                         Text(p['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
                         Text(p['position'], style: const TextStyle(color: Colors.grey)),
-                        Text('#${p['number']}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                        Text('#${p['number']}',
+                            style: const TextStyle(color: Colors.grey, fontSize: 12)),
                       ],
                     ),
                   ),
