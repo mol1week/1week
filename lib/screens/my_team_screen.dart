@@ -31,6 +31,19 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
     'SSG': 'SSG 랜더스', 'SK': 'SSG 랜더스',
   };
 
+  final Map<String, String> _displayToCsvTeam = {
+    'KIA 타이거즈': 'KIA 타이거즈',
+    '롯데 자이언츠': '롯데',
+    '삼성 라이온즈': '삼성',
+    '두산 베어스': '두산',
+    'LG 트윈스': 'LG',
+    '한화 이글스': '한화',
+    'KT 위즈': 'KT',
+    'NC 다이노스': 'NC',
+    '키움 히어로즈': '키움',
+    'SSG 랜더스': 'SSG',
+  };
+
   // 화면용 팀명 → 로고 파일명 코드
   static const Map<String, String> _displayToCode = {
     'KIA 타이거즈': 'HT',
@@ -63,7 +76,10 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
   /// 2) SharedPreferences에서 저장된 myTeam 불러오기
   /// 3) _loading=false
   Future<void> _initData() async {
-    await _loadSchedule();
+    await Future.wait([
+      _loadSchedule(),
+      _loadRankings(),
+    ]);
     final prefs = await SharedPreferences.getInstance();
     final saved = prefs.getString('myTeam');
     if (mounted) {
@@ -130,6 +146,45 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
     res.add(sb.toString().trim());
     return res;
   }
+
+  List<Map<String, String>> _rankings = [];
+
+  Future<void> _loadRankings() async {
+    final raw = await rootBundle.loadString('assets/data/kbo_win_lose.csv');
+    final lines = raw.split('\n');
+    final headers = lines.first.split(',');
+
+    final list = <Map<String, String>>[];
+    for (var i = 1; i < lines.length; i++) {
+      final line = lines[i].trim();
+      if (line.isEmpty) continue;
+      final values = line.split(',');
+      if (values.length != headers.length) continue;
+
+      final teamData = <String, String>{};
+      for (int j = 0; j < headers.length; j++) {
+        teamData[headers[j]] = values[j];
+      }
+      list.add(teamData);
+    }
+
+    setState(() {
+      _rankings = list;
+    });
+  }
+
+
+  Map<String, String>? get _myTeamRanking {
+    if (_selectedTeam == null) return null;
+    final csvName = _displayToCsvTeam[_selectedTeam!];
+    if (csvName == null) return null;
+
+    return _rankings.firstWhere(
+          (row) => row['팀명']?.trim() == csvName,
+      orElse: () => {},
+    );
+  }
+
 
   /// 오늘의 경기 리스트
   List<Map<String, dynamic>> get _todayGames {
@@ -277,9 +332,73 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
 
   /// 대시보드: 오늘의 경기, 앞으로의 경기, 우리 팀 선수 보기
   Widget _buildDashboard() => SingleChildScrollView(
+
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_myTeamRanking != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Card(
+              elevation: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '우리 팀 순위',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${_myTeamRanking!['순위']}위 ${_myTeamRanking!['팀명']}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        Text(
+                          '승률: ${_myTeamRanking!['승률']}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '전적: ${_myTeamRanking!['승']}승-${_myTeamRanking!['무']}무-${_myTeamRanking!['패']}패',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        Text(
+                          '게임차: ${_myTeamRanking!['게임차']}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '연속: ${_myTeamRanking!['연속']}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        Text(
+                          '최근 10경기: ${_myTeamRanking!['최근10경기']}',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+
         const SizedBox(height: 16),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
