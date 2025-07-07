@@ -18,7 +18,6 @@ class _PredictionScreenState extends State<PredictionScreen> {
   Map<String, dynamic>? _predData;
   bool _isLoading = true;
 
-  // 팀명 → 로고 URL
   static const Map<String, String> _teamLogoMap = {
     '삼성': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SS.png',
     '한화': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_HH.png',
@@ -39,14 +38,19 @@ class _PredictionScreenState extends State<PredictionScreen> {
   }
 
   Future<void> _loadPrediction() async {
-    // 경기 예정/진행 중인 경우 CSV에서 불러오기
     try {
       final raw = await rootBundle.loadString('assets/data/kbo_predictions.csv');
       final lines = raw.split('\n');
       for (int i = 1; i < lines.length; i++) {
         final parts = _parseCsv(lines[i]);
-        if (parts.length < 3) continue;
-        if (parts[1] == widget.game['homeTeam'] && parts[2] == widget.game['awayTeam']) {
+        print('CSV Line $i: $parts');
+        if (parts.length < 4) continue;
+        final gameDate = widget.game['date'] is DateTime
+            ? (widget.game['date'] as DateTime).toIso8601String().split('T').first
+            : widget.game['date']?.toString() ?? '';
+        if (gameDate.contains(parts[0]) &&
+            parts[1] == widget.game['homeTeam'] &&
+            parts[2] == widget.game['awayTeam']) {
           setState(() {
             _predData = {
               'winPctHome': double.tryParse(parts[3]) ?? 0.0,
@@ -56,10 +60,9 @@ class _PredictionScreenState extends State<PredictionScreen> {
           return;
         }
       }
-    } catch (_) {
-      // 무시
+    } catch (e) {
+      print('Error loading CSV: $e');
     }
-    // 매칭 실패 시
     setState(() => _isLoading = false);
   }
 
@@ -100,66 +103,105 @@ class _PredictionScreenState extends State<PredictionScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
-          '${widget.game['homeTeam']} vs ${widget.game['awayTeam']}',
-          style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             const SizedBox(height: 16),
-            // 경기장·시간
+            // 경기장 · 시간
             if (widget.game['stadium'] != null)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  '${widget.game['stadium']} · ${widget.game['time']}',
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  '${widget.game['stadium']}   |  ${widget.game['time']}',
+                  style: const TextStyle(fontSize: 18, color: Colors.grey),
                 ),
               ),
-            const SizedBox(height: 8),
-            // 로고·팀명
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _teamColumn(awayLogo, widget.game['awayTeam']),
-                const Text('VS', style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.bold)),
-                _teamColumn(homeLogo, widget.game['homeTeam']),
-              ],
-            ),
             const SizedBox(height: 16),
-            // 승률 바
+            // 예측 카드
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Container(
-                height: 40,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                child: Row(
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      flex: homePct,
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.horizontal(left: Radius.circular(20)),
+                    // 홈-원정 팀 정보
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _teamInfoColumn(
+                          logoUrl: awayLogo,
+                          teamName: widget.game['awayTeam'],
                         ),
-                        alignment: Alignment.center,
-                        child: Text('$homePct%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
+                        const Text(
+                          'VS',
+                          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        _teamInfoColumn(
+                          logoUrl: homeLogo,
+                          teamName: widget.game['homeTeam'],
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      flex: awayPct,
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.horizontal(right: Radius.circular(20)),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text('$awayPct%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 24),
+                    // 예상 득점과 승률 바
+                    Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text(
+                                '예상 득점: 4.5', // TODO: 데이터 연동
+                                style: const TextStyle(color: Colors.black, fontSize: 14),
+                              ),
+                              Text(
+                                '예상 득점: 5.6', // TODO: 데이터 연동
+                                style: const TextStyle(color: Colors.black, fontSize: 14),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                flex: homePct,
+                                child: Container(
+                                  height: 20,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.blue,
+                                    borderRadius: BorderRadius.horizontal(left: Radius.circular(10)),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text('$homePct%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                              ),
+                              Expanded(
+                                flex: awayPct,
+                                child: Container(
+                                  height: 20,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.horizontal(right: Radius.circular(10)),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text('$awayPct%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -173,36 +215,20 @@ class _PredictionScreenState extends State<PredictionScreen> {
     );
   }
 
-  Widget _teamColumn(String logoUrl, String name) => Column(
+  Widget _teamInfoColumn({
+    required String logoUrl,
+    required String teamName,
+  }) => Column(
+    mainAxisSize: MainAxisSize.min,
     children: [
       ClipOval(
         child: Image.network(logoUrl, width: 60, height: 60, fit: BoxFit.cover),
       ),
       const SizedBox(height: 8),
-      Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+      Text(
+        teamName,
+        style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
+      ),
     ],
   );
-
-  Widget _playerStat(String name, String avg, String hits, String hr, Color bg) =>
-      Expanded(
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: bg.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              CircleAvatar(
-                backgroundColor: bg,
-                child: Text(name.isNotEmpty ? name[0] : '', style: const TextStyle(color: Colors.white)),
-              ),
-              const SizedBox(height: 8),
-              Text('AVG \$avg', style: const TextStyle(fontSize: 12)),
-              Text('H \$hits', style: const TextStyle(fontSize: 12)),
-              Text('HR \$hr', style: const TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-      );
 }

@@ -170,7 +170,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return res.map((s) => s.trim()).toList();
   }
 
-  /// 코드→화면용 팀명 매핑
+  /// 코드 → 화면용 팀명 매핑
   static const Map<String, String> _teamDisplayMap = {
     'KIA' : 'KIA 타이거즈',
     '롯데' : '롯데 자이언츠',
