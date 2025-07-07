@@ -45,20 +45,11 @@ class _PredictionScreenState extends State<PredictionScreen> {
       final lines = raw.split('\n');
       for (int i = 1; i < lines.length; i++) {
         final parts = _parseCsv(lines[i]);
-        if (parts.length < 13) continue;
+        if (parts.length < 3) continue;
         if (parts[1] == widget.game['homeTeam'] && parts[2] == widget.game['awayTeam']) {
           setState(() {
             _predData = {
               'winPctHome': double.tryParse(parts[3]) ?? 0.0,
-              'winPctAway': double.tryParse(parts[4]) ?? 0.0,
-              'homeKey': parts[5],
-              'homeAvg': parts[6],
-              'homeHits': parts[7],
-              'homeHr': parts[8],
-              'awayKey': parts[9],
-              'awayAvg': parts[10],
-              'awayHits': parts[11],
-              'awayHr': parts[12],
             };
             _isLoading = false;
           });
@@ -98,8 +89,9 @@ class _PredictionScreenState extends State<PredictionScreen> {
     }
 
     final d = _predData ?? {};
-    final homePct = ((d['winPctHome'] ?? 0.0) * 100).round().clamp(0, 100);
-    final awayPct = ((d['winPctAway'] ?? 0.0) * 100).round().clamp(0, 100);
+    final double winPctHome = (d['winPctHome'] ?? 0.0) as double;
+    final homePct = (winPctHome * 100).round().clamp(0, 100);
+    final awayPct = ((1 - winPctHome) * 100).round().clamp(0, 100);
     final homeLogo = _teamLogoMap[widget.game['homeTeam']] ?? '';
     final awayLogo = _teamLogoMap[widget.game['awayTeam']] ?? '';
 
@@ -172,18 +164,6 @@ class _PredictionScreenState extends State<PredictionScreen> {
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            // 키 플레이어
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  _playerStat(d['homeKey'] ?? '', d['homeAvg'] ?? '', d['homeHits'] ?? '', d['homeHr'] ?? '', Colors.blue),
-                  const SizedBox(width: 16),
-                  _playerStat(d['awayKey'] ?? '', d['awayAvg'] ?? '', d['awayHits'] ?? '', d['awayHr'] ?? '', Colors.red),
-                ],
               ),
             ),
             const SizedBox(height: 16),
