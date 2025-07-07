@@ -146,29 +146,84 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
         children: [
-          // 날짜 네비게이션 바
           Container(
             color: Colors.white,
             padding: const EdgeInsets.all(16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // 왼쪽: 이전 날짜 버튼
                 IconButton(
                   icon: const Icon(Icons.chevron_left),
                   onPressed: () => setState(() {
                     _selectedDate = _selectedDate.subtract(const Duration(days: 1));
                   }),
                 ),
-                Row(
-                  children: [
-                    Text(
-                      '${_selectedDate.year}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.day.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.calendar_today, size: 20),
-                  ],
+                // 가운데: 날짜 + 요일 + 달력 버튼
+                GestureDetector(
+                  onTap: () async {
+                    final pickedDate = await showDatePicker(
+                      context: context,
+                      initialDate: _selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2030),
+                      locale: const Locale('ko'),
+                      builder: (context, child) {
+                        return Dialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero, // 네모난 테두리
+                          ),
+                          child: Theme(
+                            data: Theme.of(context).copyWith(
+                              colorScheme: const ColorScheme.light(
+                                primary: Colors.orange,
+                                onPrimary: Colors.white,
+                                surface: Colors.white,
+                                onSurface: Colors.black,
+                              ),
+                              datePickerTheme: const DatePickerThemeData(
+                                backgroundColor: Colors.white, // DatePicker 배경을 강제로 흰색으로 설정!
+                              ),
+                              textButtonTheme: TextButtonThemeData(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.black,
+                                ),
+                              ),
+                              textTheme: const TextTheme(
+                                titleLarge: TextStyle(fontSize: 14),
+                                bodyMedium: TextStyle(fontSize: 14),
+                              ),
+                            ),
+                            child: child!,
+                          )
+                        );
+                      },
+                    );
+                    if (pickedDate != null) {
+                      setState(() {
+                        _selectedDate = pickedDate;
+                      });
+                    }
+                  },
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min, // 내용만큼 너비 차지
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Builder(builder: (context) {
+                        final weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+                        final weekdayStr = weekdays[_selectedDate.weekday - 1];
+                        return Text(
+                          '${_selectedDate.year}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.day.toString().padLeft(2, '0')} ($weekdayStr)',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        );
+                      }),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.calendar_today, size: 20),
+                    ],
+                  ),
                 ),
+
+                // 오른쪽: 다음 날짜 버튼
                 IconButton(
                   icon: const Icon(Icons.chevron_right),
                   onPressed: () => setState(() {
@@ -178,7 +233,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ],
             ),
           ),
-
           // 경기 리스트
           Expanded(
             child: _filteredGames.isEmpty
@@ -194,100 +248,179 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 final finished = g['status'] == '경기종료';
 
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 3)],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // 경기 상태
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        // 상단: 경기장명 | 시간
+                        Text('${g['stadium']}    |    ${g['time']}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        const SizedBox(height: 15),
 
+                        // 경기 상태 표시
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           child: Text(
                             g['status'],
-                            style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                           ),
                         ),
-                        const SizedBox(height: 16),
 
-                        // 로고 · 팀명 · 시간 · 경기장
+                        const SizedBox(height: 12),
+
+                        // 로고 + VS + 로고
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Column(
-                              children: [
-                                Image.network(awayLogo, width: 40, height: 40),
-                                const SizedBox(height: 4),
-                                Text(g['awayTeam'], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                Text(g['time'], style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                                Text(g['stadium'], style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                              ],
-                            ),
-                            Column(
-                              children: [
-                                Image.network(homeLogo, width: 40, height: 40),
-                                const SizedBox(height: 4),
-                                Text(g['homeTeam'], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                              ],
-                            ),
+                            Image.network(_teamLogoMap[g['awayTeam']]!, width: 70, height: 70),
+                            const SizedBox(width: 30),
+                            const Text('VS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 30),
+                            Image.network(_teamLogoMap[g['homeTeam']]!, width: 70, height: 70),
                           ],
                         ),
-                        const SizedBox(height: 16),
 
-                        // 경기종료: 스코어 + 승·세·패 투수 / 예정: 선발투수
-                        if (finished) ...[
-                          // 스코어
-                          Text(
-                            '${g['homeScore']} : ${g['awayScore']}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          // 승·세·패 투수
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Text('승: ${g['winPitcher']}'),
-                              if ((g['savePitcher'] as String).isNotEmpty)
-                                Text('세: ${g['savePitcher']}'),
-                              Text('패: ${g['losePitcher']}'),
-                            ],
-                          ),
-                        ] else ...[
-                          // 선발투수
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Text(g['awayPitcher'], style: const TextStyle(fontSize: 12)),
-                              const Text('선발투수', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                              Text(g['homePitcher'], style: const TextStyle(fontSize: 12)),
-                            ],
-                          ),
+                        const SizedBox(height: 10),
+
+                        // 경기종료: 점수 & 승/세/패 투수 정보
+                        if (g['status'] == '경기종료') ...[
+                          Builder(builder: (context) {
+                            final homeScore = int.tryParse(g['homeScore'] ?? '0') ?? 0;
+                            final awayScore = int.tryParse(g['awayScore'] ?? '0') ?? 0;
+                            final homeWin = homeScore > awayScore;
+                            final savePitcher = g['savePitcher']?.toString() ?? '';
+
+                            return Column(
+                              children: [
+                                // 점수는 한 Row로 평행하게 고정
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '$awayScore',
+                                      style: TextStyle(
+                                          color: !homeWin ? Colors.red : Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20),
+                                    ),
+                                    const SizedBox(width: 150),
+                                    Text(
+                                      '$homeScore',
+                                      style: TextStyle(
+                                          color: homeWin ? Colors.red : Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 20),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                // 승/패/세는 아래 Row로 별도 표시
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // 어웨이팀 투수 정보
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (!homeWin) ...[
+                                          Row(
+                                            children: [
+                                              Text('승 ', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                                              Text('${g['winPitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                            ],
+                                          ),
+                                          if (savePitcher.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                Text('세 ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold,  fontSize: 13)),
+                                                Text(savePitcher, style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                              ],
+                                            ),
+                                          ],
+                                        ] else
+                                          Row(
+                                            children: [
+                                              Text('패 ', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                                              Text('${g['losePitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                            ],
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 100),
+                                    // 홈팀 투수 정보
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (homeWin) ...[
+                                          Row(
+                                            children: [
+                                              Text('승 ', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                                              Text('${g['winPitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                            ],
+                                          ),
+                                          if (savePitcher.isNotEmpty) ...[
+                                            const SizedBox(height: 2),
+                                            Row(
+                                              children: [
+                                                Text('세 ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold,  fontSize: 13)),
+                                                Text(savePitcher, style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                              ],
+                                            ),
+                                          ],
+                                        ] else
+                                          Row(
+                                            children: [
+                                              Text('패 ', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                                              Text('${g['losePitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                            ],
+                                          ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            );
+                          }),
                         ],
 
-                        const SizedBox(height: 16),
-                        // 예측 보기 버튼
-                        ElevatedButton(
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => PredictionScreen(game: g)),
+                        // 경기예정: 선발투수 & 예측보기 버튼
+                        if (g['status'] == '경기예정') ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text(g['awayPitcher'], style: const TextStyle(fontSize: 15)),
+                              const Text('선발투수', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              Text(g['homePitcher'], style: const TextStyle(fontSize: 15)),
+                            ],
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          const SizedBox(height: 8),
+                          ElevatedButton(
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => PredictionScreen(game: g)),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              minimumSize: const Size.fromHeight(36),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            child: const Text('예측 보기', style: TextStyle(color: Colors.white, fontSize: 14)),
                           ),
-                          child: const Text('예측 보기', style: TextStyle(color: Colors.white)),
-                        ),
+                        ],
                       ],
                     ),
                   ),
