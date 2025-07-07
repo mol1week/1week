@@ -159,6 +159,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     _selectedDate = _selectedDate.subtract(const Duration(days: 1));
                   }),
                 ),
+
                 // 가운데: 날짜 + 요일 + 달력 버튼
                 GestureDetector(
                   onTap: () async {
@@ -170,11 +171,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       locale: const Locale('ko'),
                       builder: (context, child) {
                         return Dialog(
+                          insetPadding: EdgeInsets.zero, // 다이얼로그 주변 여백 제거
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.zero, // 네모난 테두리
+                            borderRadius: BorderRadius.zero, // 모서리 둥글기 제거
                           ),
                           child: Theme(
                             data: Theme.of(context).copyWith(
+                              dialogBackgroundColor: Colors.transparent, // 다이얼로그 배경 투명 처리
                               colorScheme: const ColorScheme.light(
                                 primary: Colors.orange,
                                 onPrimary: Colors.white,
@@ -182,7 +185,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 onSurface: Colors.black,
                               ),
                               datePickerTheme: const DatePickerThemeData(
-                                backgroundColor: Colors.white, // DatePicker 배경을 강제로 흰색으로 설정!
+                                backgroundColor: Colors.white, // 달력 배경은 흰색으로 유지
                               ),
                               textButtonTheme: TextButtonThemeData(
                                 style: TextButton.styleFrom(
@@ -195,7 +198,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               ),
                             ),
                             child: child!,
-                          )
+                          ),
                         );
                       },
                     );
@@ -206,7 +209,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     }
                   },
                   child: Row(
-                    mainAxisSize: MainAxisSize.min, // 내용만큼 너비 차지
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Builder(builder: (context) {
@@ -298,6 +301,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           Builder(builder: (context) {
                             final homeScore = int.tryParse(g['homeScore'] ?? '0') ?? 0;
                             final awayScore = int.tryParse(g['awayScore'] ?? '0') ?? 0;
+                            final isDraw = homeScore == awayScore; // 무승부 여부
                             final homeWin = homeScore > awayScore;
                             final savePitcher = g['savePitcher']?.toString() ?? '';
 
@@ -310,87 +314,91 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                     Text(
                                       '$awayScore',
                                       style: TextStyle(
-                                          color: !homeWin ? Colors.red : Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 20),
+                                        color: isDraw ? Colors.black : (!homeWin ? Colors.red : Colors.black),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
                                     ),
                                     const SizedBox(width: 150),
                                     Text(
                                       '$homeScore',
                                       style: TextStyle(
-                                          color: homeWin ? Colors.red : Colors.black,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 20),
+                                        color: isDraw ? Colors.black : (homeWin ? Colors.red : Colors.black),
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 20,
+                                      ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 6),
-                                // 승/패/세는 아래 Row로 별도 표시
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // 어웨이팀 투수 정보
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        if (!homeWin) ...[
-                                          Row(
-                                            children: [
-                                              Text('승 ', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
-                                              Text('${g['winPitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
-                                            ],
-                                          ),
-                                          if (savePitcher.isNotEmpty) ...[
-                                            const SizedBox(height: 2),
+
+                                // 무승부가 아니면 승/세/패 투수 정보 표시
+                                if (!isDraw)
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // 어웨이팀 투수 정보
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          if (!homeWin) ...[
                                             Row(
                                               children: [
-                                                Text('세 ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold,  fontSize: 13)),
-                                                Text(savePitcher, style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                                Text('승 ', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                Text('${g['winPitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
                                               ],
                                             ),
-                                          ],
-                                        ] else
-                                          Row(
-                                            children: [
-                                              Text('패 ', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
-                                              Text('${g['losePitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                            if (savePitcher.isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Row(
+                                                children: [
+                                                  Text('세 ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                  Text(savePitcher, style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                                ],
+                                              ),
                                             ],
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(width: 100),
-                                    // 홈팀 투수 정보
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        if (homeWin) ...[
-                                          Row(
-                                            children: [
-                                              Text('승 ', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
-                                              Text('${g['winPitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
-                                            ],
-                                          ),
-                                          if (savePitcher.isNotEmpty) ...[
-                                            const SizedBox(height: 2),
+                                          ] else
                                             Row(
                                               children: [
-                                                Text('세 ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold,  fontSize: 13)),
-                                                Text(savePitcher, style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                                Text('패 ', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                Text('${g['losePitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
                                               ],
                                             ),
-                                          ],
-                                        ] else
-                                          Row(
-                                            children: [
-                                              Text('패 ', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
-                                              Text('${g['losePitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                        ],
+                                      ),
+                                      const SizedBox(width: 100),
+                                      // 홈팀 투수 정보
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          if (homeWin) ...[
+                                            Row(
+                                              children: [
+                                                Text('승 ', style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                Text('${g['winPitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                              ],
+                                            ),
+                                            if (savePitcher.isNotEmpty) ...[
+                                              const SizedBox(height: 2),
+                                              Row(
+                                                children: [
+                                                  Text('세 ', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                  Text(savePitcher, style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                                ],
+                                              ),
                                             ],
-                                          ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                          ] else
+                                            Row(
+                                              children: [
+                                                Text('패 ', style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13)),
+                                                Text('${g['losePitcher']}', style: const TextStyle(color: Colors.black, fontSize: 13)),
+                                              ],
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                               ],
                             );
                           }),
