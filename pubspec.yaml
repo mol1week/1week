@@ -27,3 +27,4 @@ flutter:
     - assets/data/kbo_games.csv
     - assets/data/kbo_hitter_players.csv
     - assets/data/kbo_pitcher_players.csv
+    - assets/logo.png

@@ -218,16 +218,17 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                 final code = _displayToCode[team]!;
                 final isSelected = _selectedTeam == team;
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedTeam = team),
+                  onTap: () {
+                    setState(() => _selectedTeam = team);
+                    // Scroll to bottom or show 저장 버튼 clearly, optionally
+                  },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.blue.withOpacity(0.1)
-                          : Colors.white,
+                      color: isSelected ? Colors.blue[50] : Colors.white,
                       border: Border.all(
-                          color:
-                          isSelected ? Colors.blue : Colors.grey.shade300,
-                          width: 2),
+                        color: isSelected ? Colors.blue : Colors.grey.shade300,
+                        width: isSelected ? 3 : 1.5,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     padding: const EdgeInsets.all(8),
@@ -256,8 +257,15 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed:
-              _selectedTeam == null ? null : () => _saveTeam(_selectedTeam!),
+              onPressed: _selectedTeam == null
+                  ? null
+                  : () async {
+                      await _saveTeam(_selectedTeam!);
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyTeamScreen()),
+                      );
+                    },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
               child: const Text('저장'),
             ),
