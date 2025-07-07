@@ -39,30 +39,6 @@ class _PredictionScreenState extends State<PredictionScreen> {
   }
 
   Future<void> _loadPrediction() async {
-    // 이미 종료된 경기라면 강제로 100%/0% 설정
-    if (widget.game['status'] == '경기종료') {
-      final home = int.tryParse(widget.game['homeScore']?.toString() ?? '') ?? 0;
-      final away = int.tryParse(widget.game['awayScore']?.toString() ?? '') ?? 0;
-      final homeWins = home > away;
-      setState(() {
-        _predData = {
-          'winPctHome': homeWins ? 1.0 : 0.0,
-          'winPctAway': homeWins ? 0.0 : 1.0,
-          // 이하 키 플레이어 데이터는 빈 값
-          'homeKey': '',
-          'homeAvg': '',
-          'homeHits': '',
-          'homeHr': '',
-          'awayKey': '',
-          'awayAvg': '',
-          'awayHits': '',
-          'awayHr': '',
-        };
-        _isLoading = false;
-      });
-      return;
-    }
-
     // 경기 예정/진행 중인 경우 CSV에서 불러오기
     try {
       final raw = await rootBundle.loadString('assets/data/kbo_predictions.csv');
