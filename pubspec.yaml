@@ -12,8 +12,7 @@ dependencies:
   cupertino_icons: ^1.0.2
   csv: ^5.1.1
   shared_preferences: ^2.0.15
-
-
+  timezone: ^0.9.4
 
 dev_dependencies:
   flutter_test:
@@ -21,7 +20,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
   assets:
+    - assets/data/kbo_games.csv
     - assets/data/kbo_hitter_players.csv
     - assets/data/kbo_pitcher_players.csv
-    - assets/data/kbo_games.csv

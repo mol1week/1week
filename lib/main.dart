@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
 
-void main() {
-  runApp(const BaseballApp());
+
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  runApp(const BaseballApp()); // 이걸 지우면 앱이 실행되지 않음
 }
 
 class BaseballApp extends StatelessWidget {
@@ -22,4 +26,3 @@ class BaseballApp extends StatelessWidget {
     );
   }
 }
-
