@@ -1,9 +1,8 @@
 // lib/screens/schedule_screen.dart
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'prediction_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/my_team_provider.dart';
@@ -170,61 +169,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 // 가운데: 날짜 + 요일 + 달력 버튼
                 GestureDetector(
                   onTap: () async {
-                    DateTime? pickedDate;
-                    await showGeneralDialog(
+                    final DateTime? picked = await showDatePicker(
                       context: context,
-                      barrierDismissible: true,
-                      barrierLabel: 'Date Picker',
-                      barrierColor: Colors.transparent,
-                      pageBuilder: (context, animation, secondaryAnimation) {
-                        return Center(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: Localizations.override(
-                              context: context,
-                              locale: const Locale('ko'),
-                              child: Theme(
-                                data: Theme.of(context).copyWith(
-                                  colorScheme: ColorScheme.light(
-                                    primary: primaryColor,
-                                    onPrimary: Colors.white,
-                                    surface: Colors.white,
-                                    onSurface: Colors.black,
-                                  ),
-                                  datePickerTheme: const DatePickerThemeData(
-                                    backgroundColor: Colors.white,
-                                  ),
-                                  textButtonTheme: TextButtonThemeData(
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Colors.black,
-                                    ),
-                                  ),
-                                  textTheme: Theme.of(context).textTheme.copyWith(
-                                    titleLarge: const TextStyle(
-                                      fontSize: 10, // 👈 상단 날짜 텍스트 크기 줄이기
-                                      fontWeight: FontWeight.normal,
-                                      color: Colors.black,
-                                    ),
-                                    bodyMedium: const TextStyle(fontSize: 14),
-                                  ),
-                                ),
-                                child: DatePickerDialog(
-                                  initialDate: _selectedDate,
-                                  firstDate: DateTime(2020),
-                                  lastDate: DateTime(2026),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ).then((value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedDate = value as DateTime;
-                        });
-                      }
-                    });
+                      initialDate: _selectedDate,
+                      firstDate: DateTime(2020),
+                      lastDate: DateTime(2026),
+                      locale: const Locale('ko'),
+                    );
+                    if (picked != null && picked != _selectedDate) {
+                      setState(() {
+                        _selectedDate = picked;
+                      });
+                    }
                   },
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

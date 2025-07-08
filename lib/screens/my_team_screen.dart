@@ -172,9 +172,9 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
           ),
         )
             : null,
-        title: Text(
+        title: const Text(
           "My TEAM",
-          style: const TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
         ),
         actions: [
           if (selectedTeam != null)
@@ -397,6 +397,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
 
   Widget _buildDashboard(BuildContext context, String team, List<Map<String, dynamic>> todayGames, List<Map<String, dynamic>> upcomingGames) {
     final myTeam = context.watch<MyTeamProvider>().myTeam;
+    // You'll need to define these functions or use a predefined color map
     final primaryColor = getPrimaryColor(myTeam);
     final secondaryColor = getSecondaryColor(myTeam);
     return SingleChildScrollView(
@@ -477,7 +478,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                                 borderRadius: BorderRadius.circular(12), // 모서리 둥글기
                                 side: BorderSide(
                                   color: secondaryColor, // 테두리 색상
-                                  width: 4.0,         // 테두리 두께
+                                  width: 4.0,           // 테두리 두께
                                 ),
                               ),
                               child: Padding(
@@ -556,7 +557,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: secondaryColor, // 테두리 색상
-                        width: 4.0,         // 테두리 두께
+                        width: 4.0,           // 테두리 두께
                       ),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12), // 내부 여백
@@ -645,6 +646,3 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
     );
   }
 }
-
-
-

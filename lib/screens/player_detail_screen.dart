@@ -1,4 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/my_team_provider.dart';
+// 팀별 primary 컬러 매핑
+const Map<String, Color> _primaryColors = {
+  'KIA 타이거즈': Color(0xFFEA0029),
+  '롯데 자이언츠': Color(0xFFA60C27),
+  '삼성 라이온즈': Color(0xFF074CA1),
+  '두산 베어스':   Color(0xFF1A1748),
+  'LG 트윈스':     Color(0xFFC30452),
+  '한화 이글스':   Color(0xFFEA5C24),
+  'KT 위즈':      Color(0xFF000000),
+  'NC 다이노스':   Color(0xFF315288),
+  '키움 히어로즈': Color(0xFF570514),
+  'SSG 랜더스':    Color(0xFFCE0E2D),
+  '전체':         Color(0xFFF0F0F0),
+};
+
+/// 팀 이름으로 primary 컬러 반환
+Color getPrimaryColor(String teamName) {
+  return _primaryColors[teamName] ?? _primaryColors['전체']!;
+}
 
 class PlayerDetailScreen extends StatelessWidget {
   final Map<String, dynamic> player;
@@ -8,8 +29,12 @@ class PlayerDetailScreen extends StatelessWidget {
     final isPitcher = player['isPitcher'] as bool;
     final stats = player['stats'] as Map<String, Map<String, String>>;
 
+    // 선택된 선수 팀 이름으로 배경색 가져오기
+    final teamName = player['team'] as String;
+    final primaryColor = getPrimaryColor(teamName);
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: primaryColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -43,10 +68,10 @@ class PlayerDetailScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               Text(player['name'],
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 8),
               Text('#${player['number']} | ${player['position']}',
-                  style: const TextStyle(color: Colors.grey)),
+                  style: const TextStyle(color: Colors.white)),
             ]),
           ),
           const SizedBox(height: 32),
