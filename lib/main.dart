@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
-
+import 'providers/my_team_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const BaseballApp()); // 이걸 지우면 앱이 실행되지 않음
+  final myTeamProvider = MyTeamProvider();
+  await myTeamProvider.loadMyTeam(); // SharedPreferences에서 초기값 불러오기
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: myTeamProvider,
+      child: const BaseballApp(),
+    ),
+  );
 }
 
 class BaseballApp extends StatelessWidget {
@@ -22,11 +30,6 @@ class BaseballApp extends StatelessWidget {
       ),
       home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
     );
   }
 }

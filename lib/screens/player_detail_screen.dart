@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 class PlayerDetailScreen extends StatelessWidget {
   final Map<String, dynamic> player;
   const PlayerDetailScreen({super.key, required this.player});
-
   @override
   Widget build(BuildContext context) {
     final isPitcher = player['isPitcher'] as bool;
