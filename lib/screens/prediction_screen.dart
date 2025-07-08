@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -19,6 +20,8 @@ class PredictionScreen extends StatefulWidget {
 class _PredictionScreenState extends State<PredictionScreen> {
   Map<String, dynamic>? _predData;
   bool _isLoading = true;
+  Map<String, double> _teamAvg = {};
+  Map<String, double> _teamOps = {};
 
   static const Map<String, String> _teamLogoMap = {
     '삼성': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SS.png',
@@ -33,10 +36,50 @@ class _PredictionScreenState extends State<PredictionScreen> {
     '두산': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_OB.png',
   };
   List<Map<String, dynamic>> _pitchers = [];
+
   @override
   void initState() {
     super.initState();
-    _loadPitchers().then((_) => _loadPrediction());
+    _loadHitters()
+      .then((_) => _loadPitchers())
+      .then((_) => _loadPrediction());
+  }
+
+  Future<void> _loadHitters() async {
+    final raw = await rootBundle.loadString('assets/data/kbo_hitter_players.csv');
+    final lines = raw.split('\n');
+    final Map<String, List<double>> avgMap = {};
+    final Map<String, List<double>> opsMap = {};
+    for (int i = 1; i < lines.length; i++) {
+      final parts = _parseCSVLine(lines[i].trim(), maxSplits: 5);
+      if (parts.length < 6) continue;
+      var recordJson = parts.last;
+      if (recordJson.startsWith('"') && recordJson.endsWith('"')) {
+        recordJson = recordJson.substring(1, recordJson.length - 1);
+      }
+      recordJson = recordJson.replaceAll("'", '"');
+      try {
+        final recs = json.decode(recordJson) as List<dynamic>;
+        if (recs.isEmpty) continue;
+        final latest = recs.cast<Map<String, dynamic>>()
+                          .where((r) => r.containsKey('Year'))
+                          .reduce((a, b) => int.parse(a['Year'].toString()) > int.parse(b['Year'].toString()) ? a : b);
+        final team = latest['Team']?.toString() ?? '';
+        final avg = double.tryParse(latest['Avg']?.toString() ?? '') ?? 0.0;
+        final obp = double.tryParse(latest['OBP']?.toString() ?? '') ?? 0.0;
+        final slg = double.tryParse(latest['SLG']?.toString() ?? '') ?? 0.0;
+        final ops = obp + slg;
+        avgMap.putIfAbsent(team, () => []).add(avg);
+        opsMap.putIfAbsent(team, () => []).add(ops);
+      } catch (_) {}
+    }
+    // Compute team averages
+    avgMap.forEach((team, list) {
+      _teamAvg[team] = list.reduce((a, b) => a + b) / list.length;
+    });
+    opsMap.forEach((team, list) {
+      _teamOps[team] = list.reduce((a, b) => a + b) / list.length;
+    });
   }
 
   Future<void> _loadPitchers() async {
@@ -118,34 +161,89 @@ class _PredictionScreenState extends State<PredictionScreen> {
   }
 
   Future<void> _loadPrediction() async {
-    try {
-      final raw = await rootBundle.loadString('assets/data/kbo_predictions.csv');
-      final lines = raw.split('\n');
-      for (int i = 1; i < lines.length; i++) {
-        final parts = _parseCsv(lines[i]);
-        print('CSV Line $i: $parts');
-        if (parts.length < 6) continue;
-        final gameDate = widget.game['date'] is DateTime
-            ? (widget.game['date'] as DateTime).toIso8601String().split('T').first
-            : widget.game['date']?.toString() ?? '';
-        if (gameDate.contains(parts[0]) &&
-            parts[1] == widget.game['homeTeam'] &&
-            parts[2] == widget.game['awayTeam']) {
-          setState(() {
-            _predData = {
-              'scoreHome': double.tryParse(parts[3]) ?? 0.0,
-              'scoreAway':double.tryParse(parts[4]) ?? 0.0,
-              'winPctHome': double.tryParse(parts[5]) ?? 0.0,
-            };
-            _isLoading = false;
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      print('Error loading CSV: $e');
-    }
-    setState(() => _isLoading = false);
+    // 1) Extract features from widget.game
+    final homeTeam = widget.game['homeTeam']?.toString() ?? '';
+    final awayTeam = widget.game['awayTeam']?.toString() ?? '';
+    final homeAvg = _teamAvg[homeTeam] ?? 0.300;
+    final awayAvg = _teamAvg[awayTeam] ?? 0.300;
+
+    // Lookup ERA from loaded pitcher data
+    final homePitchEntry = _pitchers.firstWhere(
+      (p) => p['name'] == widget.game['homePitcher'],
+      orElse: () => {},
+    );
+    final awayPitchEntry = _pitchers.firstWhere(
+      (p) => p['name'] == widget.game['awayPitcher'],
+      orElse: () => {},
+    );
+    final homeEraStr = (homePitchEntry['careerStats']?['era'] ?? '').toString();
+    final awayEraStr = (awayPitchEntry['careerStats']?['era'] ?? '').toString();
+    final homeEra = double.tryParse(homeEraStr) ?? 4.00;
+    final awayEra = double.tryParse(awayEraStr) ?? 4.00;
+
+    // Parse OPS from loaded team OPS after hitters load (otherwise default)
+    final homeOps = _teamOps[homeTeam] ?? 0.700;
+    final awayOps = _teamOps[awayTeam] ?? 0.700;
+
+    // 1.1) Extract SP win/loss counts for additional features
+    final homeSPWins = double.tryParse(homePitchEntry['careerStats']?['win'] ?? '0') ?? 0.0;
+    final awaySPWins = double.tryParse(awayPitchEntry['careerStats']?['win'] ?? '0') ?? 0.0;
+    final spWinDiff = homeSPWins - awaySPWins;
+
+    final homeSPLosses = double.tryParse(homePitchEntry['careerStats']?['lose'] ?? '0') ?? 0.0;
+    final awaySPLosses = double.tryParse(awayPitchEntry['careerStats']?['lose'] ?? '0') ?? 0.0;
+    final spLossDiff = homeSPLosses - awaySPLosses;
+
+    // 2) Logistic regression coefficients (update with trained values)
+    const double beta0 = -0.345;
+    const double betaAvg =  2.12;
+    const double betaEra = -1.73;
+    const double betaOps =  3.08;
+    const double betaHomeAdv = 0.55;
+    const double betaSPWinDiff = 0.05;   // SP win difference coefficient
+    const double betaSPLossDiff = -0.02; // SP loss difference coefficient
+
+    // 3) Compute feature differences
+    final avgDiff = homeAvg - awayAvg;
+    final eraDiff = awayEra - homeEra;
+    final opsDiff = homeOps - awayOps;
+    const homeDummy = 1.0;
+
+    // 4) Calculate logit and probability
+    final logitValue = beta0
+        + betaAvg * avgDiff
+        + betaEra * eraDiff
+        + betaOps * opsDiff
+        + betaHomeAdv * homeDummy
+        + betaSPWinDiff * spWinDiff
+        + betaSPLossDiff * spLossDiff;
+    // Raw probability from logistic
+    final rawWinPct = 1 / (1 + exp(-logitValue));
+    // Apply moderate smoothing towards 50%
+    const double smoothingFactor = 0.5;
+    final baseWinPct = 0.5 + (rawWinPct - 0.5) * smoothingFactor;
+
+    // Add deterministic noise per game to diversify probabilities
+    final seed = widget.game['date']?.toString().hashCode ?? DateTime.now().millisecondsSinceEpoch;
+    final rnd = Random(seed);
+    const double noiseLevel = 0.1; // up to ±10% noise
+    final noise = (rnd.nextDouble() * 2 - 1) * noiseLevel;
+    final winPctHome = (baseWinPct + noise).clamp(0.0, 1.0);
+
+    // 5) Derive score predictions (scaled)
+    const expectedTotalRuns = 7.0;
+    final scoreHome = double.parse((winPctHome * expectedTotalRuns).toStringAsFixed(1));
+    final scoreAway = double.parse(((1 - winPctHome) * expectedTotalRuns).toStringAsFixed(1));
+
+    // 6) Update state for UI
+    setState(() {
+      _predData = {
+        'scoreHome': scoreHome,
+        'scoreAway': scoreAway,
+        'winPctHome': winPctHome,
+      };
+      _isLoading = false;
+    });
   }
 
   List<String> _parseCsv(String line) {
@@ -276,6 +374,7 @@ class _PredictionScreenState extends State<PredictionScreen> {
                         ),
                       ),
                     const SizedBox(height: 24),
+
                     // 예상 득점과 승률 바
                     Container(
                       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -286,6 +385,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
                       child: Column(
                         children: [
                           // 예상 득점과 승률 바
+
+
 
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -498,6 +599,9 @@ Widget _buildStatItem(String label, String value) {
     ],
   );
 }
+
+
+
 
 
 
