@@ -21,16 +21,16 @@ class _PredictionScreenState extends State<PredictionScreen> {
   bool _isLoading = true;
 
   static const Map<String, String> _teamLogoMap = {
-    '삼성': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SS.png',
-    '한화': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_HH.png',
-    '롯데': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_LT.png',
-    'KIA' : 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_HT.png',
-    '키움': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_WO.png',
-    'SSG' : 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SK.png',
-    'LG'  : 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_LG.png',
-    'KT'  : 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_KT.png',
-    'NC'  : 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_NC.png',
-    '두산': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_OB.png',
+    '두산': 'assets/image/두산.png',
+    '삼성': 'assets/image/삼성.png',
+    '롯데': 'assets/image/롯데.png',
+    'KIA': 'assets/image/KIA.png',
+    '한화': 'assets/image/한화.png',
+    'KT':  'assets/image/KT.png',
+    'SSG': 'assets/image/SSG.png',
+    '키움': 'assets/image/키움.png',
+    'LG':  'assets/image/LG.png',
+    'NC':  'assets/image/NC.png',
   };
   List<Map<String, dynamic>> _pitchers = [];
   @override
@@ -314,8 +314,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
                           ),
                           const SizedBox(height: 15),
                           Text(
-                            '승리 확률',
-                            style: const TextStyle(color: Colors.black, fontSize: 15),
+                            '< 승리 확률 >',
+                            style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 12),
                           Row(
@@ -425,7 +425,7 @@ class _PredictionScreenState extends State<PredictionScreen> {
     mainAxisSize: MainAxisSize.min,
     children: [
       ClipOval(
-        child: Image.network(logoUrl, width: 60, height: 60, fit: BoxFit.contain),
+        child: Image.asset(logoUrl, width: 60, height: 60, fit: BoxFit.contain),
       ),
       const SizedBox(height: 8),
       Text(

@@ -29,3 +29,13 @@ flutter:
     - assets/data/kbo_hitter_players.csv
     - assets/data/kbo_pitcher_players.csv
     - assets/data/kbo_predictions.csv
+    - assets/image/KIA.png
+    - assets/image/KT.png
+    - assets/image/LG.png
+    - assets/image/NC.png
+    - assets/image/SSG.png
+    - assets/image/롯데.png
+    - assets/image/삼성.png
+    - assets/image/키움.png
+    - assets/image/한화.png
+    - assets/image/두산.png
