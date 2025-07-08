@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'schedule_screen.dart';
 import 'my_team_screen.dart';
 import 'player_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/my_team_provider.dart';
 
 /// HomeScreen:
 /// 하단 탭바로 "일정 보기", "마이팀", "선수 보기" 화면을 전환하는 메인 화면입니다.
@@ -25,6 +27,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final myTeam = context.watch<MyTeamProvider>().myTeam;
+    final primaryColor = getPrimaryColor(myTeam);
     return Scaffold(
       // 모든 스크린을 트리에 남겨두고, 현재 인덱스만 보여줍니다.
       body: IndexedStack(
@@ -35,7 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
+        selectedItemColor: primaryColor,
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(

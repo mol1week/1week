@@ -32,7 +32,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
   };
 
   final Map<String, String> _displayToCsvTeam = {
-    'KIA 타이거즈': 'KIA',
+    'KIA 타이거즈': 'KIA 타이거즈',
     '롯데 자이언츠': '롯데',
     '삼성 라이온즈': '삼성',
     '두산 베어스': '두산',
