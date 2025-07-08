@@ -20,6 +20,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+flutter_localizations:
+  sdk: flutter
 
 flutter:
   uses-material-design: true
@@ -41,4 +43,3 @@ flutter:
     - assets/image/두산.png
     - assets/logo.png
     - assets/data/kbo_win_lose.csv
-
