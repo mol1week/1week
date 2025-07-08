@@ -118,8 +118,14 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
     }
 
     final now = DateTime.now();
-    final todayGames = _getGamesFor(selectedTeam ?? '', DateTimeRange(start: now, end: now.add(const Duration(days: 1))));
-    final upcomingGames = _getGamesFor(selectedTeam ?? '', DateTimeRange(start: now.add(const Duration(days: 1)), end: now.add(const Duration(days: 7))));
+    final todayGames = _getGamesFor(
+      selectedTeam ?? '',
+      DateTimeRange(start: now, end: now.add(const Duration(days: 1))),
+    );
+    final upcomingGames = _getGamesFor(
+      selectedTeam ?? '',
+      DateTimeRange(start: now.add(const Duration(days: 1)), end: now.add(const Duration(days: 7))),
+    );
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -128,13 +134,13 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
         elevation: 0,
         leading: selectedTeam != null
             ? Padding(
-          padding: const EdgeInsets.all(8),
-          child: CircleAvatar(
-            backgroundImage: NetworkImage(
-              'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_${_displayToCode[selectedTeam]!}.png',
-            ),
-          ),
-        )
+                padding: const EdgeInsets.all(8),
+                child: CircleAvatar(
+                  backgroundImage: NetworkImage(
+                    'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_${_displayToCode[selectedTeam]!}.png',
+                  ),
+                ),
+              )
             : null,
         title: Text(
           selectedTeam ?? '마이 팀 설정',
@@ -148,7 +154,9 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
             ),
         ],
       ),
-      body: selectedTeam == null ? _buildPicker(context) : _buildDashboard(context, selectedTeam, todayGames, upcomingGames),
+      body: selectedTeam == null
+          ? _buildPicker(context)
+          : _buildDashboard(context, selectedTeam, todayGames, upcomingGames),
     );
   }
 
@@ -159,8 +167,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          const Text('마이 팀을 선택하세요',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('마이 팀을 선택하세요', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 12),
           Expanded(
             child: GridView.count(
@@ -174,9 +181,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                   onTap: () => setState(() => _selectedTeam = team),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.blue.withOpacity(0.1)
-                          : Colors.white,
+                      color: isSelected ? Colors.blue[50] : Colors.white,
                       border: Border.all(
                         color: isSelected ? Colors.blue : Colors.grey.shade300,
                         width: 2,
@@ -194,11 +199,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                           ),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          team,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                        ),
+                        Text(team, textAlign: TextAlign.center, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                       ],
                     ),
                   ),
@@ -213,8 +214,8 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
               onPressed: _selectedTeam == null
                   ? null
                   : () async {
-                await myTeamProvider.setMyTeam(_selectedTeam!);
-              },
+                      await myTeamProvider.setMyTeam(_selectedTeam!);
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
@@ -227,8 +228,12 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
     );
   }
 
-
-  Widget _buildDashboard(BuildContext context, String team, List<Map<String, dynamic>> todayGames, List<Map<String, dynamic>> upcomingGames) {
+  Widget _buildDashboard(
+    BuildContext context,
+    String team,
+    List<Map<String, dynamic>> todayGames,
+    List<Map<String, dynamic>> upcomingGames,
+  ) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -244,62 +249,73 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
             child: todayGames.isEmpty
                 ? const Center(child: Text('오늘 경기가 없습니다.', style: TextStyle(color: Colors.grey)))
                 : ListView.builder(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.1),
-                itemCount: todayGames.length,
-                itemBuilder: (ctx, i) {
-                  final g = todayGames[i];
-                  final hc = _displayToCode[g['home']]!;
-                  final ac = _displayToCode[g['away']]!;
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: SizedBox(
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      child: Card(
-                        margin: EdgeInsets.zero,
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    scrollDirection: Axis.horizontal,
+                    padding: EdgeInsets.symmetric(horizontal: MediaQuery.of(context).size.width * 0.1),
+                    itemCount: todayGames.length,
+                    itemBuilder: (ctx, i) {
+                      final g = todayGames[i];
+                      final hc = _displayToCode[g['home']]!;
+                      final ac = _displayToCode[g['away']]!;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: SizedBox(
+                          width: MediaQuery.of(context).size.width * 0.8,
+                          child: Card(
+                            margin: EdgeInsets.zero,
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
-                                  Column(children: [
-                                    ClipOval(
-                                      child: Image.network(
-                                        'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_${hc}.png',
-                                        width: 48, height: 48, fit: BoxFit.cover,
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          ClipOval(
+                                            child: Image.network(
+                                              'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_${hc}.png',
+                                              width: 48,
+                                              height: 48,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(g['home'], style: const TextStyle(fontSize: 12)),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(g['home'], style: const TextStyle(fontSize: 12)),
-                                  ]),
-                                  const Text('VS', style: TextStyle(color: Colors.grey, fontSize: 14)),
-                                  Column(children: [
-                                    ClipOval(
-                                      child: Image.network(
-                                        'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_${ac}.png',
-                                        width: 48, height: 48, fit: BoxFit.cover,
+                                      const Text('VS', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                                      Column(
+                                        children: [
+                                          ClipOval(
+                                            child: Image.network(
+                                              'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_${ac}.png',
+                                              width: 48,
+                                              height: 48,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(g['away'], style: const TextStyle(fontSize: 12)),
+                                        ],
                                       ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(g['away'], style: const TextStyle(fontSize: 12)),
-                                  ]),
+                                    ],
+                                  ),
+                                  Column(
+                                    children: [
+                                      Text(g['time'], style: const TextStyle(color: Colors.grey)),
+                                      const SizedBox(height: 4),
+                                      Text(g['status'], style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                                    ],
+                                  ),
                                 ],
                               ),
-                              Column(children: [
-                                Text(g['time'], style: const TextStyle(color: Colors.grey)),
-                                const SizedBox(height: 4),
-                                Text(g['status'], style: const TextStyle(fontSize: 12, color: Colors.blue)),
-                              ]),
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                  );
-                }),
+                      );
+                    },
+                  ),
           ),
           const SizedBox(height: 16),
           const Padding(
@@ -324,7 +340,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                 ),
               ),
             );
-          }),
+          }).toList(),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),

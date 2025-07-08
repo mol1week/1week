@@ -5,6 +5,7 @@ import 'providers/my_team_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   final myTeamProvider = MyTeamProvider();
   await myTeamProvider.loadMyTeam(); // SharedPreferences에서 초기값 불러오기
 
