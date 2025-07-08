@@ -27,16 +27,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   /// 팀명 → 로고 이미지 URL 맵
   static const Map<String, String> _teamLogoMap = {
-    '두산': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_OB.png',
-    '삼성': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SS.png',
-    '롯데': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_LT.png',
-    'KIA':  'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_HT.png',
-    '한화': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_HH.png',
-    'KT':   'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_KT.png',
-    'SSG':  'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_SK.png',
-    '키움': 'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_WO.png',
-    'LG':   'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_LG.png',
-    'NC':   'https://6ptotvmi5753.edge.naverncp.com/KBO_IMAGE/emblem/regular/2025/emblem_NC.png',
+    '두산': 'assets/image/두산.png',
+    '삼성': 'assets/image/삼성.png',
+    '롯데': 'assets/image/롯데.png',
+    'KIA': 'assets/image/KIA.png',
+    '한화': 'assets/image/한화.png',
+    'KT':  'assets/image/KT.png',
+    'SSG': 'assets/image/SSG.png',
+    '키움': 'assets/image/키움.png',
+    'LG':  'assets/image/LG.png',
+    'NC':  'assets/image/NC.png',
   };
 
   @override
@@ -232,7 +232,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     color: Colors.white,
                     border: Border.all(
                       color: secondaryColor,
-                      width: 5,
+                      width: 4,
                     ),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
@@ -272,11 +272,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.network(_teamLogoMap[g['awayTeam']]!, width: 70, height: 70),
-                            const SizedBox(width: 30),
+                            Image.asset(_teamLogoMap[g['awayTeam']]!, width: 70, height: 70),
+                            const SizedBox(width: 35),
                             const Text('VS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 30),
-                            Image.network(_teamLogoMap[g['homeTeam']]!, width: 70, height: 70),
+                            const SizedBox(width: 35),
+                            Image.asset(_teamLogoMap[g['homeTeam']]!, width: 70, height: 70),
                           ],
                         ),
 
@@ -416,7 +416,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                   } else if (states.contains(MaterialState.hovered)) {
                                     return Colors.grey.shade800;
                                   }
-                                  return Colors.black;
+                                  return secondaryColor;
                                 }),
                                 minimumSize: MaterialStateProperty.all(const Size.fromHeight(36)),
                                 padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),

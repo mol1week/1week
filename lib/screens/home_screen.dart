@@ -16,7 +16,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   /// 현재 선택된 탭 인덱스 (0: 일정 보기, 1: 마이팀, 2: 선수 보기)
-  int _currentIndex = 0;
+  int _currentIndex = 1;
 
   /// 화면 목록
   final List<Widget> _screens = const [

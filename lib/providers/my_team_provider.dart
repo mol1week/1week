@@ -68,6 +68,7 @@ const Map<String, Map<String, Color>> teamColors = {
   },
 };
 
+
 Color getPrimaryColor(String? teamName) {
   return teamColors[teamName]?['primary'] ?? Colors.blue;
 }
