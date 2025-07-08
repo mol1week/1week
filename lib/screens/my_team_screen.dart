@@ -527,7 +527,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                                     ),
                                     Column(
                                       children: [
-                                        Text(g['time'], style: const TextStyle(color: Colors.black)),
+                                        Text(g['time'], style: TextStyle(color: secondaryColor, fontWeight: FontWeight.bold )),
                                         const SizedBox(height: 4),
                                         Text(g['status'], style: TextStyle(fontSize: 12, color: primaryColor, fontWeight: FontWeight.bold)),
                                       ],
@@ -589,7 +589,7 @@ class _MyTeamScreenState extends State<MyTeamScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     '${upcomingGames[i]['date'].month}.${upcomingGames[i]['date'].day} ${upcomingGames[i]['time']}',
-                                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                                    style: TextStyle(fontSize: 14, color: secondaryColor, fontWeight: FontWeight.bold),
                                     textAlign: TextAlign.center,
                                   ),
                                 ],
