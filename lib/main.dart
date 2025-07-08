@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'screens/home_screen.dart';
-
-
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  runApp(const BaseballApp()); // 이걸 지우면 앱이 실행되지 않음
+  runApp(const BaseballApp());
 }
 
 class BaseballApp extends StatelessWidget {
@@ -21,7 +19,7 @@ class BaseballApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'NotoSans',
       ),
-      home: const HomeScreen(),
+      home: const SplashScreen(), // 여기 변경됨
       debugShowCheckedModeBanner: false,
     );
   }
