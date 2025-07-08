@@ -1,9 +1,13 @@
 // lib/screens/schedule_screen.dart
 
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'prediction_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/my_team_provider.dart';
+
 
 /// ScheduleScreen:
 /// - assets/data/kbo_games.csv 파일에서 KBO 리그 경기일정을 로드합니다.
@@ -126,14 +130,17 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final myTeam = context.watch<MyTeamProvider>().myTeam;
+    final primaryColor = getPrimaryColor(myTeam);
+    final secondaryColor = getSecondaryColor(myTeam);
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: primaryColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         title: Row(
-          children: const [
-            Icon(Icons.sports_baseball, color: Colors.blue),
+          children: [
+            Icon(Icons.sports_baseball, color: primaryColor),
             SizedBox(width: 8),
             Text(
               '경기일정/결과',
@@ -147,14 +154,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           : Column(
         children: [
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            color: primaryColor,
+            padding: const EdgeInsets.all(10),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // 왼쪽: 이전 날짜 버튼
                 IconButton(
-                  icon: const Icon(Icons.chevron_left),
+                  icon: const Icon(Icons.chevron_left, color: Colors.white),
                   onPressed: () => setState(() {
                     _selectedDate = _selectedDate.subtract(const Duration(days: 1));
                   }),
@@ -178,8 +185,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                               locale: const Locale('ko'),
                               child: Theme(
                                 data: Theme.of(context).copyWith(
-                                  colorScheme: const ColorScheme.light(
-                                    primary: Colors.orange,
+                                  colorScheme: ColorScheme.light(
+                                    primary: primaryColor,
                                     onPrimary: Colors.white,
                                     surface: Colors.white,
                                     onSurface: Colors.black,
@@ -228,18 +235,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         final weekdayStr = weekdays[_selectedDate.weekday - 1];
                         return Text(
                           '${_selectedDate.year}.${_selectedDate.month.toString().padLeft(2, '0')}.${_selectedDate.day.toString().padLeft(2, '0')} ($weekdayStr)',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                         );
                       }),
                       const SizedBox(width: 8),
-                      const Icon(Icons.calendar_today, size: 20),
+                      const Icon(Icons.calendar_today, size: 20, color: Colors.white),
                     ],
                   ),
                 ),
 
                 // 오른쪽: 다음 날짜 버튼
                 IconButton(
-                  icon: const Icon(Icons.chevron_right),
+                  icon: const Icon(Icons.chevron_right, color: Colors.white),
                   onPressed: () => setState(() {
                     _selectedDate = _selectedDate.add(const Duration(days: 1));
                   }),
@@ -253,7 +260,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           Expanded(
             child: _filteredGames.isEmpty
                 ? const Center(
-              child: Text('해당일 경기 정보가 없습니다.', style: TextStyle(color: Colors.grey)),
+              child: Text('해당일 경기 정보가 없습니다.', style: TextStyle(color: Colors.white)),
             )
                 : ListView.builder(
               itemCount: _filteredGames.length,
@@ -264,11 +271,21 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 final finished = g['status'] == '경기종료';
 
                 return Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: Colors.white,
+                    border: Border.all(
+                      color: secondaryColor,
+                      width: 5,
+                    ),
                     borderRadius: BorderRadius.circular(8),
-                    boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 3)],
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        offset: Offset(0, 0),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
@@ -293,7 +310,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 5),
 
                         // 로고 + VS + 로고
                         Row(
@@ -307,7 +324,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 5),
 
                         // 경기종료: 점수 & 승/세/패 투수 정보
                         if (g['status'] == '경기종료') ...[
@@ -436,11 +453,20 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 context,
                                 MaterialPageRoute(builder: (_) => PredictionScreen(game: g)),
                               ),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                minimumSize: const Size.fromHeight(36),
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              style: ButtonStyle(
+                                backgroundColor: MaterialStateProperty.resolveWith((states) {
+                                  if (states.contains(MaterialState.pressed)) {
+                                    return primaryColor;
+                                  } else if (states.contains(MaterialState.hovered)) {
+                                    return Colors.grey.shade800;
+                                  }
+                                  return Colors.black;
+                                }),
+                                minimumSize: MaterialStateProperty.all(const Size.fromHeight(36)),
+                                padding: MaterialStateProperty.all(const EdgeInsets.symmetric(horizontal: 16)),
+                                shape: MaterialStateProperty.all(
+                                  RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
                               ),
                               child: const Text('예측 보기', style: TextStyle(color: Colors.white, fontSize: 14)),
                             ),
