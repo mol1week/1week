@@ -29,6 +29,7 @@ flutter:
     - assets/data/kbo_hitter_players.csv
     - assets/data/kbo_pitcher_players.csv
     - assets/data/kbo_predictions.csv
+<<<<<<< HEAD
     - assets/image/KIA.png
     - assets/image/KT.png
     - assets/image/LG.png
@@ -39,3 +40,7 @@ flutter:
     - assets/image/키움.png
     - assets/image/한화.png
     - assets/image/두산.png
+=======
+    - assets/logo.png
+    - assets/data/kbo_win_lose.csv
+>>>>>>> 8374a51ddd29569ce2cdc16085a385141fa76817
