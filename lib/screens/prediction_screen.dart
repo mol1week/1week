@@ -22,6 +22,8 @@ class _PredictionScreenState extends State<PredictionScreen> {
   bool _isLoading = true;
   Map<String, double> _teamAvg = {};
   Map<String, double> _teamOps = {};
+  // 최근 5경기 결과를 저장할 맵
+  Map<String, List<String>> _teamRecentResults = {};
 
   static const Map<String, String> _teamLogoMap = {
     '두산': 'assets/image/두산.png',
@@ -42,7 +44,29 @@ class _PredictionScreenState extends State<PredictionScreen> {
     super.initState();
     _loadHitters()
       .then((_) => _loadPitchers())
+      .then((_) => _loadRecentResults())
       .then((_) => _loadPrediction());
+  }
+  // 최근 5경기 결과 CSV 파싱 및 저장
+  Future<void> _loadRecentResults() async {
+    final raw = await rootBundle.loadString('assets/data/kbo_win_lose.csv');
+    final lines = raw.split('\n');
+    for (int i = 1; i < lines.length; i++) {
+      final cols = _parseCsv(lines[i]);
+      if (cols.length >= 9) {
+        final team = cols[1].trim();
+        final recentRaw = cols[8].replaceAll(' ', '').replaceAll('무', ''); // e.g. "3승-2패" or "승,패,승,승,패"
+        final recentList = recentRaw.split('-').expand((part) {
+          if (part.contains('승')) {
+            return List.filled(int.tryParse(part.replaceAll('승', '')) ?? 0, '승');
+          } else if (part.contains('패')) {
+            return List.filled(int.tryParse(part.replaceAll('패', '')) ?? 0, '패');
+          }
+          return [];
+        }).toList();
+        _teamRecentResults[team] = recentList.take(5).map((e) => e.toString()).toList();
+      }
+    }
   }
 
   Future<void> _loadHitters() async {
@@ -136,6 +160,7 @@ class _PredictionScreenState extends State<PredictionScreen> {
         'heightWeight'   : heightWeight,
         'stats'          : stats,
         'careerStats'    : stats['2025'] ?? {'era': '-', 'win': '-', 'lose': '-'},
+        'Player_name'    : normalizeName(name),
       });
     }
 
@@ -160,26 +185,97 @@ class _PredictionScreenState extends State<PredictionScreen> {
     return res.map((s) => s.trim()).toList();
   }
 
+  // 팀명 정규화 함수
+  String normalizeTeamName(String team) {
+    const Map<String, String> mapping = {
+      'KIA': 'KIA',
+      '한화': '한화',
+      '두산': '두산',
+      '삼성': '삼성',
+      '롯데': '롯데',
+      'KT': 'KT',
+      'SSG': 'SSG',
+      '키움': '키움',
+      'LG': 'LG',
+      'NC': 'NC',
+    };
+    return mapping[team] ?? team;
+  }
+
+  // 투수 이름 정규화 함수
+  String normalizeName(String name) {
+    return name.replaceAll(' ', '').trim();
+  }
+
+  double _calcRecentWinRate(List<String>? results) {
+    if (results == null || results.isEmpty) return 0.5;
+    final wins = results.where((r) => r == '승').length;
+    return wins / results.length;
+  }
+
+  int _calcStreakScore(List<String>? results) {
+    if (results == null || results.isEmpty) return 0;
+    return results.map((r) => r == '승' ? 1 : -1).reduce((a, b) => a + b);
+  }
+
   Future<void> _loadPrediction() async {
     // 1) Extract features from widget.game
-    final homeTeam = widget.game['homeTeam']?.toString() ?? '';
-    final awayTeam = widget.game['awayTeam']?.toString() ?? '';
+    final homeTeam = normalizeTeamName(widget.game['homeTeam']?.toString() ?? '');
+    final awayTeam = normalizeTeamName(widget.game['awayTeam']?.toString() ?? '');
     final homeAvg = _teamAvg[homeTeam] ?? 0.300;
     final awayAvg = _teamAvg[awayTeam] ?? 0.300;
 
+    // 디버깅: 등록된 투수 전체 확인
+    print('[DEBUG] 등록된 투수 수: ${_pitchers.length}');
+    print('[DEBUG] 등록된 투수 예시: ${_pitchers.take(5).map((p) => p['Player_name']).toList()}');
+
     // Lookup ERA from loaded pitcher data
     final homePitchEntry = _pitchers.firstWhere(
-      (p) => p['name'] == widget.game['homePitcher'],
+      (p) => normalizeName(p['Player_name']) == normalizeName(widget.game['homePitcher'] ?? ''),
       orElse: () => {},
     );
     final awayPitchEntry = _pitchers.firstWhere(
-      (p) => p['name'] == widget.game['awayPitcher'],
+      (p) => normalizeName(p['Player_name']) == normalizeName(widget.game['awayPitcher'] ?? ''),
       orElse: () => {},
     );
+
+    // [DEBUG] Inspect pitcher data for 2025 season
+    print('[DEBUG] 홈 투수 전체 데이터: $homePitchEntry');
+    print('[DEBUG] 홈 투수 2025 기록: ${homePitchEntry['stats']?['2025']}');
+    print('[DEBUG] 어웨이 투수 전체 데이터: $awayPitchEntry');
+    print('[DEBUG] 어웨이 투수 2025 기록: ${awayPitchEntry['stats']?['2025']}');
+
+    // 디버깅: 투수 매칭 결과 출력
+    if (homePitchEntry.isEmpty) {
+      print('[DEBUG] 홈 투수 매칭 실패: ${widget.game['homePitcher']}');
+    } else {
+      print('[DEBUG] 홈 투수 매칭 성공: ${widget.game['homePitcher']}');
+    }
+    if (awayPitchEntry.isEmpty) {
+      print('[DEBUG] 어웨이 투수 매칭 실패: ${widget.game['awayPitcher']}');
+    } else {
+      print('[DEBUG] 어웨이 투수 매칭 성공: ${widget.game['awayPitcher']}');
+    }
     final homeEraStr = (homePitchEntry['careerStats']?['era'] ?? '').toString();
     final awayEraStr = (awayPitchEntry['careerStats']?['era'] ?? '').toString();
     final homeEra = double.tryParse(homeEraStr) ?? 4.00;
     final awayEra = double.tryParse(awayEraStr) ?? 4.00;
+
+    // Extract 2025 pitcher stats for advanced features
+    final homeStats25 = homePitchEntry['stats']?['2025'] ?? {};
+    final awayStats25 = awayPitchEntry['stats']?['2025'] ?? {};
+
+    // Extract advanced pitcher stats using lowercased keys: whip, ip, k9
+    final homeWHIP = double.tryParse(homeStats25['whip']?.toString() ?? '') ?? 1.3;
+    final awayWHIP = double.tryParse(awayStats25['whip']?.toString() ?? '') ?? 1.3;
+    final homeIP = double.tryParse(homeStats25['ip']?.toString() ?? '') ?? 80.0;
+    final awayIP = double.tryParse(awayStats25['ip']?.toString() ?? '') ?? 80.0;
+    final homeK9 = double.tryParse(homeStats25['k9']?.toString() ?? '') ?? 7.0;
+    final awayK9 = double.tryParse(awayStats25['k9']?.toString() ?? '') ?? 7.0;
+
+    final whipDiff = awayWHIP - homeWHIP;
+    final ipDiff = homeIP - awayIP;
+    final k9Diff = homeK9 - awayK9;
 
     // Parse OPS from loaded team OPS after hitters load (otherwise default)
     final homeOps = _teamOps[homeTeam] ?? 0.700;
@@ -194,6 +290,21 @@ class _PredictionScreenState extends State<PredictionScreen> {
     final awaySPLosses = double.tryParse(awayPitchEntry['careerStats']?['lose'] ?? '0') ?? 0.0;
     final spLossDiff = homeSPLosses - awaySPLosses;
 
+    final homeRecent = _teamRecentResults[homeTeam];
+    final awayRecent = _teamRecentResults[awayTeam];
+    final recentWinDiff = _calcRecentWinRate(homeRecent) - _calcRecentWinRate(awayRecent);
+    final streakScoreDiff = _calcStreakScore(homeRecent) - _calcStreakScore(awayRecent);
+
+    // --- 예측 입력값 디버깅 로그 ---
+    print('--- 예측 입력값 ---');
+    print('Home: $homeTeam, Away: $awayTeam');
+    print('AVG diff: ${homeAvg - awayAvg}');
+    print('ERA diff: ${awayEra - homeEra}');
+    print('OPS diff: ${homeOps - awayOps}');
+    print('SP Wins diff: $spWinDiff, SP Loss diff: $spLossDiff');
+    print('최근 5경기: ${_teamRecentResults[homeTeam]}, ${_teamRecentResults[awayTeam]}');
+    print('WHIP diff: $whipDiff, IP diff: $ipDiff, K9 diff: $k9Diff');
+
     // 2) Logistic regression coefficients (update with trained values)
     const double beta0 = -0.345;
     const double betaAvg =  2.12;
@@ -202,6 +313,11 @@ class _PredictionScreenState extends State<PredictionScreen> {
     const double betaHomeAdv = 0.55;
     const double betaSPWinDiff = 0.05;   // SP win difference coefficient
     const double betaSPLossDiff = -0.02; // SP loss difference coefficient
+    const double betaRecent = 1.1;
+    const double betaStreak = 0.7;
+    const double betaWHIP = -1.2;
+    const double betaIP = 0.1;
+    const double betaK9 = 0.6;
 
     // 3) Compute feature differences
     final avgDiff = homeAvg - awayAvg;
@@ -216,17 +332,22 @@ class _PredictionScreenState extends State<PredictionScreen> {
         + betaOps * opsDiff
         + betaHomeAdv * homeDummy
         + betaSPWinDiff * spWinDiff
-        + betaSPLossDiff * spLossDiff;
+        + betaSPLossDiff * spLossDiff
+        + betaRecent * recentWinDiff
+        + betaStreak * streakScoreDiff
+        + betaWHIP * whipDiff
+        + betaIP * ipDiff
+        + betaK9 * k9Diff;
     // Raw probability from logistic
     final rawWinPct = 1 / (1 + exp(-logitValue));
     // Apply moderate smoothing towards 50%
-    const double smoothingFactor = 0.5;
+    const double smoothingFactor = 0.8;
     final baseWinPct = 0.5 + (rawWinPct - 0.5) * smoothingFactor;
 
     // Add deterministic noise per game to diversify probabilities
     final seed = widget.game['date']?.toString().hashCode ?? DateTime.now().millisecondsSinceEpoch;
     final rnd = Random(seed);
-    const double noiseLevel = 0.1; // up to ±10% noise
+    const double noiseLevel = 0.15; // up to ±15% noise
     final noise = (rnd.nextDouble() * 2 - 1) * noiseLevel;
     final winPctHome = (baseWinPct + noise).clamp(0.0, 1.0);
 
@@ -278,11 +399,11 @@ class _PredictionScreenState extends State<PredictionScreen> {
     final d = _predData ?? {};
 
     final awayPitcherData = _pitchers.firstWhere(
-          (p) => p['name'] == widget.game['awayPitcher'],
+      (p) => normalizeName(p['Player_name']) == normalizeName(widget.game['awayPitcher'] ?? ''),
       orElse: () => {},
     );
     final homePitcherData = _pitchers.firstWhere(
-          (p) => p['name'] == widget.game['homePitcher'],
+      (p) => normalizeName(p['Player_name']) == normalizeName(widget.game['homePitcher'] ?? ''),
       orElse: () => {},
     );
 
