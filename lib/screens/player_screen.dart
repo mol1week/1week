@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'player_detail_screen.dart';
+import 'package:provider/provider.dart';
+import '../providers/my_team_provider.dart';
 
 /// PlayerScreen:
 /// 선수 목록 화면입니다. filterTeam 파라미터로 특정 팀만 보여줄 수 있습니다.
@@ -20,7 +22,7 @@ class PlayerScreen extends StatefulWidget {
 class _PlayerScreenState extends State<PlayerScreen> {
   /// 현재 드롭다운에 선택된 팀
   late String _selectedTeam;
-
+  bool _userChangedFilter = false;
   /// 드롭다운용 팀 목록 (전체 + CSV에서 추출된 팀)
   List<String> _teams = ['전체'];
 
@@ -32,12 +34,19 @@ class _PlayerScreenState extends State<PlayerScreen> {
 
   @override
   void initState() {
-    super.initState();
-    // filterTeam 이 넘어오면 그 팀으로 초기 설정, 아니면 '전체'
-    _selectedTeam = widget.filterTeam ?? '전체';
-    _loadAllPlayers();
+    super.initState();// 데이터 로딩만 담당
   }
+  bool _initialized = false;
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _selectedTeam = context.read<MyTeamProvider>().myTeam ?? '전체';;
+      _loadAllPlayers();
+      _initialized = true;
+    }
+  }
   /// hitter/pitcher CSV를 모두 읽어서 _players 에 저장
   Future<void> _loadAllPlayers() async {
     final hitters  = await _loadCsv('assets/data/kbo_hitter_players.csv', isPitcher: false);
@@ -198,36 +207,39 @@ class _PlayerScreenState extends State<PlayerScreen> {
     return _players.where((p) => p['team'] == _selectedTeam).toList();
   }
 
-  static const Map<String, Color> _primaryColors = {
-    'KIA 타이거즈': Color(0xFFEA0029),
-    '롯데 자이언츠': Color(0xFFA60C27),
-    '삼성 라이온즈': Color(0xFF074CA1),
-    '두산 베어스':   Color(0xFF1A1748),
-    'LG 트윈스':     Color(0xFFC30452),
-    '한화 이글스':   Color(0xFFEA5C24),
-    'KT 위즈':      Color(0xFF000000),
-    'NC 다이노스':   Color(0xFF315288),
-    '키움 히어로즈': Color(0xFF570514),
-    'SSG 랜더스':    Color(0xFFCE0E2D),
-    '전체':         Color(0xFFF0F0F0), // 기본 회색
-  };
-
-  /// 팀 이름으로 primary 컬러 반환
-  Color getPrimaryColor(String teamName) {
-    return _primaryColors[teamName] ?? _primaryColors['전체']!;
-  }
 
   @override
   Widget build(BuildContext context) {
     // 선택된 드롭다운 팀을 배경색으로 사용
-    final primaryColor = getPrimaryColor(_selectedTeam);
+    final myTeam = context.watch<MyTeamProvider>().myTeam;
 
+    // 사용자가 드롭다운을 건드리지 않았고, 마이팀과 필터가 다르면 동기화
+    if (!_userChangedFilter &&
+        widget.filterTeam == null &&
+        myTeam != null &&
+        myTeam != _selectedTeam) {
+      setState(() {
+        _selectedTeam = myTeam;
+      });
+    }
+
+    final primaryColor = getPrimaryColor(_selectedTeam);
+    final secondaryColor = getSecondaryColor(_selectedTeam);
     return Scaffold(
-      backgroundColor: primaryColor,
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text('선수 보기', style: TextStyle(color: Colors.black)),
+        title: Row(
+          children: [
+            Icon(Icons.sports_baseball, color: primaryColor),
+            SizedBox(width: 8),
+            Text(
+              '선수 보기',
+              style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -235,20 +247,25 @@ class _PlayerScreenState extends State<PlayerScreen> {
         children: [
           // ── 팀 필터 ──
           Container(
-            color: Colors.white,
-            padding: const EdgeInsets.all(16),
+            color: primaryColor,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                const Text('팀 필터', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text('팀 필터', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(width: 16),
                 Expanded(
                   child: DropdownButton<String>(
                     isExpanded: true,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                    dropdownColor: primaryColor,
                     value: _selectedTeam,
                     items: _teams
                         .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                         .toList(),
-                    onChanged: (t) => setState(() => _selectedTeam = t!),
+                      onChanged: (t) => setState(() {
+                        _selectedTeam = t!;
+                        _userChangedFilter = true;
+                      }),
                   ),
                 ),
               ],
@@ -265,8 +282,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
                 childAspectRatio: 0.8,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                crossAxisSpacing: 14,
+                mainAxisSpacing: 14,
               ),
               itemCount: _filteredPlayers.length,
               itemBuilder: (ctx, i) {
@@ -281,6 +298,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: primaryColor, // 테두리 색상
+                        width: 3.0,         // 테두리 두께
+                      ),
                       boxShadow: [
                         BoxShadow(color: Colors.grey.withOpacity(0.2), blurRadius: 3)
                       ],
@@ -296,11 +317,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
                               ? NetworkImage(p['imageUrl'])
                               : null,
                         ),
-                        const SizedBox(height: 8),
-                        Text(p['name'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text(p['position'], style: const TextStyle(color: Colors.grey)),
+                        const SizedBox(height: 10),
+                        Text(p['name'], style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: primaryColor)),
+                        Text(p['position'], style: TextStyle(fontSize: 12, color: secondaryColor)),
                         Text('#${p['number']}',
-                            style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                            style: const TextStyle(color: Colors.black, fontSize: 12)),
                       ],
                     ),
                   ),

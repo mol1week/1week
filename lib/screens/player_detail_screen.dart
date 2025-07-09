@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/my_team_provider.dart';
+
 // 팀별 primary 컬러 매핑
 const Map<String, Color> _primaryColors = {
   'KIA 타이거즈': Color(0xFFEA0029),
@@ -16,10 +17,6 @@ const Map<String, Color> _primaryColors = {
   '전체':         Color(0xFFF0F0F0),
 };
 
-/// 팀 이름으로 primary 컬러 반환
-Color getPrimaryColor(String teamName) {
-  return _primaryColors[teamName] ?? _primaryColors['전체']!;
-}
 
 class PlayerDetailScreen extends StatelessWidget {
   final Map<String, dynamic> player;
@@ -32,9 +29,10 @@ class PlayerDetailScreen extends StatelessWidget {
     // 선택된 선수 팀 이름으로 배경색 가져오기
     final teamName = player['team'] as String;
     final primaryColor = getPrimaryColor(teamName);
+    final secondaryColor = getSecondaryColor(teamName);
 
     return Scaffold(
-      backgroundColor: primaryColor,
+      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -50,45 +48,67 @@ class PlayerDetailScreen extends StatelessWidget {
           // 프로필
           Center(
             child: Column(children: [
-              CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.grey[300],
-                backgroundImage: (player['imageUrl'] != null &&
-                    player['imageUrl'].toString().isNotEmpty)
-                    ? NetworkImage(player['imageUrl'])
-                    : null,
-                child: (player['imageUrl'] == null ||
-                    player['imageUrl'].toString().isEmpty)
-                    ? Text(player['name'][0],
+              const SizedBox(height: 16),
+              Container(
+                width: 160, // = radius * 2
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: primaryColor, // 원하는 색상
+                    width: 4.0,         // 테두리 두께
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 60,
+                  backgroundColor: Colors.grey[300],
+                  backgroundImage: (player['imageUrl'] != null &&
+                      player['imageUrl'].toString().isNotEmpty)
+                      ? NetworkImage(player['imageUrl'])
+                      : null,
+                  child: (player['imageUrl'] == null ||
+                      player['imageUrl'].toString().isEmpty)
+                      ? Text(
+                    player['name'][0],
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold))
-                    : null,
+                      color: Colors.white,
+                      fontSize: 40,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ) : null,
+                ),
               ),
               const SizedBox(height: 16),
               Text(player['name'],
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: primaryColor)),
               const SizedBox(height: 8),
               Text('#${player['number']} | ${player['position']}',
-                  style: const TextStyle(color: Colors.white)),
+                  style: TextStyle(color: primaryColor, fontSize: 16, fontWeight: FontWeight.bold)),
             ]),
           ),
           const SizedBox(height: 32),
 
           // 기본 정보
           Card(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), // 모서리 둥글기
+              side: BorderSide(
+                color: primaryColor, // 테두리 색
+                width: 4.0,         // 테두리 두께
+              ),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('기본 정보',
+                Text('기본 정보',
                     style:
-                    TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    TextStyle(fontSize: 18,color: primaryColor, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                _buildInfoRow('팀', player['team']),
-                _buildInfoRow('등번호', '#${player['number']}'),
-                _buildInfoRow('포지션', player['positionDetail']),
-                _buildInfoRow('신체', player['heightWeight']),
+                _buildInfoRow('팀', player['team'],secondaryColor),
+                _buildInfoRow('등번호', '#${player['number']}', secondaryColor),
+                _buildInfoRow('포지션', player['positionDetail'], secondaryColor),
+                _buildInfoRow('신체', player['heightWeight'], secondaryColor),
               ]),
             ),
           ),
@@ -96,13 +116,21 @@ class PlayerDetailScreen extends StatelessWidget {
 
           // 스탯 카드 (타자/투수별)
           Card(
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12), // 모서리 둥글기
+              side: BorderSide(
+                color: primaryColor, // 테두리 색
+                width: 4.0,         // 테두리 두께
+              ),
+            ),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(isPitcher ? '투수 기록' : '타자 기록',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        style: TextStyle(fontSize: 18, color: primaryColor, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 16),
                     _buildStatsSection('2025 시즌', stats['2025']!, isPitcher),
                     const SizedBox(height: 16),
@@ -115,11 +143,11 @@ class PlayerDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String? val) {
+  Widget _buildInfoRow(String label, String? val, Color secondaryColor) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(children: [
-        SizedBox(width: 80, child: Text(label, style: const TextStyle(color: Colors.grey))),
+        SizedBox(width: 80, child: Text(label, style: TextStyle(color: secondaryColor))),
         Expanded(child: Text(val ?? 'N/A', style: const TextStyle(fontWeight: FontWeight.w500))),
       ]),
     );
