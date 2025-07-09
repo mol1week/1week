@@ -95,6 +95,14 @@ final double homeWinProb;
 }
 
 
+
+시연 
+![설명](assets/images/logo.png)
+
+
+
+
+
 🛠️ 향후 개선 사항
 API 연동
 KBO 오픈 API 또는 자체 서버에서 실제 경기/선수 데이터 가져오기
