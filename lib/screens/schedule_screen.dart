@@ -273,9 +273,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Image.asset(_teamLogoMap[g['awayTeam']]!, width: 70, height: 70),
-                            const SizedBox(width: 35),
-                            const Text('VS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            const SizedBox(width: 35),
+                            const SizedBox(width: 30),
+                            const Text('VS', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                            const SizedBox(width: 30),
                             Image.asset(_teamLogoMap[g['homeTeam']]!, width: 70, height: 70),
                           ],
                         ),
@@ -395,11 +395,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(g['awayPitcher'], style: const TextStyle(fontSize: 15)),
+                              Text(g['awayPitcher'], style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                               const SizedBox(width: 35),
-                              const Text('선발투수', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              const Text('선발투수', style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500)),
                               const SizedBox(width: 35),
-                              Text(g['homePitcher'], style: const TextStyle(fontSize: 15)),
+                              Text(g['homePitcher'], style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                             ],
                           ),
                           const SizedBox(height: 8),
