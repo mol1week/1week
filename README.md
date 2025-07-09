@@ -97,7 +97,7 @@ final double homeWinProb;
 
 
 시연 
-![설명](assets/images/logo.png)
+![설명](assets/logo.png)
 
 
 
